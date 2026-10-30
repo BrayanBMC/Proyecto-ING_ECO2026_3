@@ -1,6 +1,6 @@
-# Interés Claro
+# Proyecto-ING_ECO2026_3
 
-Simulador académico de créditos e ingeniería económica en pesos colombianos (COP). Es el sucesor de EconomicApp: replica sus funciones (ver `PROJECT_SPEC.md`) y las mejora según `PROPUESTA_NUEVO_PROYECTO.md`.
+Simulador académico de créditos e ingeniería económica en pesos colombianos (COP). El diseño técnico está en `PROPUESTA_NUEVO_PROYECTO.md`.
 
 - Calcula en el navegador con precisión decimal de 34 dígitos (decimal.js).
 - Modo invitado sin registro: calcula y exporta reportes sin guardar nada.
