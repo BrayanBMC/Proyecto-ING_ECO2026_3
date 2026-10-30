@@ -4,7 +4,8 @@ Simulador académico de créditos e ingeniería económica en pesos colombianos 
 
 - Calcula en el navegador con precisión decimal de 34 dígitos (decimal.js).
 - Modo invitado sin registro: calcula y exporta reportes sin guardar nada.
-- Registro con correo, contraseña, código de verificación y aceptación de la política de datos (HU-01). Más adelante guardará perfil y simulaciones en Neon (PostgreSQL con RLS).
+- Registro con correo, contraseña, código de verificación y aceptación de la política de datos (HU-01). Inicio y cierre de sesión (HU-02) y recuperación de contraseña con código al correo (HU-03).
+- En Neon → Settings → Better Auth deben estar activos "Sign-up with Email", "Verify at Sign-up" y el método "Verification code"; si no, no llegan los códigos. Más adelante guardará perfil y simulaciones en Neon (PostgreSQL con RLS).
 - Costo $0: Cloudflare Workers (solo archivos estáticos, gratis e ilimitados), GitHub Actions y Neon Free, sin tarjeta.
 
 El avance historia por historia está en `BITACORA_DESARROLLO.md`.

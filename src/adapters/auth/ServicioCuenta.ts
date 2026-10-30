@@ -12,16 +12,34 @@ export interface DatosNuevaCuenta {
   contrasena: string;
 }
 
+/** Datos mínimos del usuario con sesión iniciada que muestra la cabecera. */
+export interface Usuario {
+  nombre: string;
+  correo: string;
+}
+
 export interface ServicioCuenta {
-  /** Crea la cuenta. Neon envía un código de verificación al correo. */
+  /** HU-01: crea la cuenta. Neon envía un código de verificación al correo. */
   registrar(datos: DatosNuevaCuenta): Promise<ResultadoCuenta>;
   /**
-   * Confirma el correo con el código recibido y deja la sesión iniciada.
+   * HU-01: confirma el correo con el código recibido y deja la sesión iniciada.
    * Recibe la contraseña porque, si Neon no inicia sesión solo tras verificar, el adaptador la inicia.
    */
   verificarCorreo(datos: { correo: string; codigo: string; contrasena: string }): Promise<ResultadoCuenta>;
-  /** Vuelve a enviar el código de verificación (vence a los 15 minutos). */
+  /** HU-01: vuelve a enviar el código de verificación (vence a los 15 minutos). */
   reenviarCodigo(correo: string): Promise<ResultadoCuenta>;
-  /** Guarda la prueba del consentimiento (Ley 1581) para el usuario con sesión iniciada. */
+  /** HU-01: guarda la prueba del consentimiento (Ley 1581) para el usuario con sesión iniciada. */
   registrarConsentimiento(versionPolitica: string): Promise<ResultadoCuenta>;
+
+  /** HU-02: usuario con sesión iniciada, o null si es invitado. */
+  sesionActual(): Promise<Usuario | null>;
+  /** HU-02: inicia sesión con correo y contraseña. */
+  iniciarSesion(correo: string, contrasena: string): Promise<ResultadoCuenta>;
+  /** HU-02: cierra la sesión en este navegador. */
+  cerrarSesion(): Promise<ResultadoCuenta>;
+
+  /** HU-03: envía al correo un código para restablecer la contraseña. */
+  pedirCodigoRecuperacion(correo: string): Promise<ResultadoCuenta>;
+  /** HU-03: cambia la contraseña con el código recibido. */
+  restablecerContrasena(datos: { correo: string; codigo: string; contrasena: string }): Promise<ResultadoCuenta>;
 }

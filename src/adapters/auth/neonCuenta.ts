@@ -5,7 +5,8 @@ import type { DatosNuevaCuenta, ResultadoCuenta, ServicioCuenta } from './Servic
 /**
  * Implementación del puerto de cuentas con Neon Managed Better Auth + Data API.
  * Es el único archivo (junto con el repositorio de datos) que importa el SDK de Neon.
- * Métodos según https://neon.com/docs/reference/javascript-sdk
+ * Métodos según https://neon.com/docs/reference/javascript-sdk y
+ * https://neon.com/docs/auth/guides/plugins/email-otp
  */
 
 interface RespuestaSdk {
@@ -55,5 +56,25 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
         const respuesta = await cliente.from('consentimiento').insert({ version_politica: versionPolitica });
         return respuesta.error?.code === '23505' ? {} : respuesta;
       }),
+
+    sesionActual: async () => {
+      try {
+        const usuario = (await cliente.auth.getSession()).data?.user;
+        return usuario ? { nombre: usuario.name, correo: usuario.email } : null;
+      } catch {
+        return null;
+      }
+    },
+
+    iniciarSesion: (correo: string, contrasena: string) =>
+      capturar(() => cliente.auth.signIn.email({ email: correo, password: contrasena })),
+
+    cerrarSesion: () => capturar(() => cliente.auth.signOut()),
+
+    pedirCodigoRecuperacion: (correo: string) =>
+      capturar(() => cliente.auth.forgetPassword.emailOtp({ email: correo })),
+
+    restablecerContrasena: ({ correo, codigo, contrasena }) =>
+      capturar(() => cliente.auth.emailOtp.resetPassword({ email: correo, otp: codigo, password: contrasena })),
   };
 }

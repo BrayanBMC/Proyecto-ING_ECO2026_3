@@ -12,5 +12,18 @@ export {
   esquemaCodigo,
   validarRegistro,
   validarCodigo,
+  validarInicioSesion,
+  validarRestablecimiento,
+  validarCorreo,
 } from './cuenta';
-export type { DatosRegistro, RegistroValido, CampoRegistro, ErroresRegistro, ResultadoValidacion } from './cuenta';
+export type {
+  DatosRegistro,
+  RegistroValido,
+  CampoRegistro,
+  ErroresRegistro,
+  ResultadoValidacion,
+  DatosInicioSesion,
+  ErroresInicioSesion,
+  DatosRestablecimiento,
+  ErroresRestablecimiento,
+} from './cuenta';

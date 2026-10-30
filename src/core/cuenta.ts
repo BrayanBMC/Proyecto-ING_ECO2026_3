@@ -75,3 +75,63 @@ export function validarCodigo(codigo: string): ResultadoValidacion<string, strin
   const resultado = esquemaCodigo.safeParse(codigo);
   return resultado.success ? { ok: true, datos: resultado.data } : { ok: false, errores: MENSAJE_CODIGO };
 }
+
+/** Primer mensaje de error de cada campo. */
+function erroresPorCampo<C extends string>(issues: readonly { path: PropertyKey[]; message: string }[]) {
+  const errores: Partial<Record<C, string>> = {};
+  for (const problema of [...issues].reverse()) {
+    errores[problema.path[0] as C] = problema.message;
+  }
+  return errores;
+}
+
+// HU-02: iniciar sesión. Solo se revisa el formato; la contraseña la valida el servidor.
+export const esquemaInicioSesion = z.object({
+  correo: esquemaRegistro.shape.correo,
+  contrasena: z.string().min(1, 'Escribe tu contraseña.'),
+});
+
+export type DatosInicioSesion = z.input<typeof esquemaInicioSesion>;
+export type ErroresInicioSesion = Partial<Record<keyof DatosInicioSesion, string>>;
+
+export function validarInicioSesion(
+  datos: DatosInicioSesion,
+): ResultadoValidacion<z.output<typeof esquemaInicioSesion>, ErroresInicioSesion> {
+  const resultado = esquemaInicioSesion.safeParse(datos);
+  return resultado.success
+    ? { ok: true, datos: resultado.data }
+    : { ok: false, errores: erroresPorCampo<keyof DatosInicioSesion>(resultado.error.issues) };
+}
+
+// HU-03: nueva contraseña con el código que llega al correo.
+export const esquemaRestablecimiento = z.object({
+  codigo: esquemaCodigo,
+  contrasena: esquemaRegistro.shape.contrasena,
+  confirmacion: z.string(),
+});
+
+export type DatosRestablecimiento = z.input<typeof esquemaRestablecimiento>;
+export type ErroresRestablecimiento = Partial<Record<keyof DatosRestablecimiento, string>>;
+
+export function validarRestablecimiento(
+  datos: DatosRestablecimiento,
+): ResultadoValidacion<z.output<typeof esquemaRestablecimiento>, ErroresRestablecimiento> {
+  const resultado = esquemaRestablecimiento.safeParse(datos);
+  const errores = resultado.success
+    ? {}
+    : erroresPorCampo<keyof DatosRestablecimiento>(resultado.error.issues);
+  if (datos.confirmacion !== datos.contrasena) {
+    errores.confirmacion = MENSAJE_NO_COINCIDEN;
+  }
+  return resultado.success && Object.keys(errores).length === 0
+    ? { ok: true, datos: resultado.data }
+    : { ok: false, errores };
+}
+
+/** HU-03: valida solo el correo (pedir código de recuperación). */
+export function validarCorreo(correo: string): ResultadoValidacion<string, string> {
+  const resultado = esquemaRegistro.shape.correo.safeParse(correo);
+  return resultado.success
+    ? { ok: true, datos: resultado.data }
+    : { ok: false, errores: 'Escribe un correo válido, por ejemplo nombre@dominio.co.' };
+}

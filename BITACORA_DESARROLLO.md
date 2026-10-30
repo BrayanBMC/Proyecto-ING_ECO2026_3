@@ -148,3 +148,62 @@ Prueba:
 7. Repetir el registro con el mismo correo. Resultado esperado: "Ya existe una cuenta con ese correo."
 
 Para las pruebas locales: `npm run coverage`.
+
+### Ajuste posterior de HU-01: activar la verificación en Neon (30 de octubre de 2026)
+
+- **Problema:** al crear la cuenta no llegaba el código. Neon trae la verificación de correo apagada por defecto.
+- **Solución:** en Neon → Settings → Better Auth se activaron "Sign-up with Email", "Verify at Sign-up" y el método "Verification code". No hubo cambios de código.
+
+## [HU-02 y HU-03] - Iniciar y cerrar sesión, y recuperar la contraseña
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions.
+
+**Historias:**
+- HU-02: como usuario registrado quiero iniciar y cerrar sesión para acceder a mis datos de forma segura.
+- HU-03: como usuario registrado quiero recuperar mi contraseña por correo para no perder mi cuenta si la olvido.
+
+### ¿Qué se hizo?
+
+- `src/ui/paginas/IniciarSesion.tsx` (`/iniciar-sesion`): correo y contraseña, con enlaces a "¿Olvidaste tu contraseña?" y "Crear cuenta".
+- `src/ui/paginas/RecuperarContrasena.tsx` (`/recuperar-contrasena`): pide el correo, envía un código y permite escribir el código con la nueva contraseña.
+- `src/ui/App.tsx`: la app consulta la sesión al abrir. Con sesión, la cabecera muestra "Hola, {nombre}" y "Cerrar sesión", y oculta "Invitado", "Iniciar sesión" y "Crear cuenta" (esto corrige lo reportado en HU-01). Sin sesión muestra lo de antes más "Iniciar sesión".
+- `src/ui/Campo.tsx`: campo de formulario reutilizable (etiqueta, ayuda y error accesibles).
+- `src/core/cuenta.ts`: `validarInicioSesion`, `validarRestablecimiento` y `validarCorreo`, que reutilizan las reglas de HU-01.
+- `ServicioCuenta` y `neonCuenta.ts`: `sesionActual`, `iniciarSesion`, `cerrarSesion`, `pedirCodigoRecuperacion` y `restablecerContrasena`.
+- `mensajes.ts`: "Correo o contraseña incorrectos." para contraseña errada y para correo inexistente.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Sesión:** `auth.getSession()` al montar la app; `auth.signIn.email` para entrar y `auth.signOut` para salir. Al cerrar sesión se limpia el usuario y se vuelve al inicio como invitado.
+- **No revelar correos (criterio HU-02):** Better Auth responde `INVALID_EMAIL_OR_PASSWORD` en ambos casos y la app muestra el mismo mensaje. La recuperación dice "Si el correo tiene una cuenta, le enviamos un código", sin confirmar si existe.
+- **Recuperación con código:** `auth.forgetPassword.emailOtp` envía el código y `auth.emailOtp.resetPassword` cambia la contraseña ([docs de Neon](https://neon.com/docs/auth/guides/plugins/email-otp)).
+- **Cambio frente a la propuesta:** HU-03 decía "enlace del correo". El correo compartido de Neon solo envía códigos (la misma razón de HU-01), así que se usa código. Si el código está usado o vencido, se muestra el error y el botón "Enviar otro código".
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/cuenta.test.ts`: `validarInicioSesion` (normaliza el correo; pide correo y contraseña), `validarRestablecimiento` (válido; solo confirmación distinta; tres errores a la vez) y `validarCorreo`.
+- `tests/unit/Sesion.test.tsx`
+  - Test: criterio HU-02, contraseña incorrecta muestra "Correo o contraseña incorrectos." y sigue como invitado.
+  - Test: valida el formulario antes de llamar al servicio.
+  - Test: al entrar, la cabecera muestra "Hola, Ana Pérez" y oculta "Invitado", "Iniciar sesión" y "Crear cuenta".
+  - Test: si ya hay sesión al abrir, aparece "Cerrar sesión".
+  - Test: criterio HU-02, al cerrar sesión vuelve a invitado y al inicio.
+  - Test: el inicio de sesión enlaza la recuperación.
+  - Test: criterio HU-03, con el código define la nueva contraseña y ofrece iniciar sesión.
+  - Test: criterio HU-03, con código vencido muestra el error y permite pedir otro.
+  - Test: rechaza correo inválido, muestra error de envío y valida código, longitud y confirmación.
+  - Test: sin URL de Neon, ambas páginas dicen que no está disponible.
+  - Test: el botón "Iniciar sesión" de la cabecera abre la página.
+- `tests/unit/servicioFalso.ts`: servicio de cuentas falso compartido por las pruebas de UI.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+1. Abrir la app, pulsar "Iniciar sesión" y escribir tu correo con una contraseña equivocada. Resultado esperado: "Correo o contraseña incorrectos."
+2. Escribir la contraseña correcta. Resultado esperado: vuelve al inicio y la cabecera dice "Hola, {tu nombre}" con "Cerrar sesión"; ya no aparecen "Invitado" ni "Crear cuenta".
+3. Recargar la página. Resultado esperado: sigue la sesión.
+4. Pulsar "Cerrar sesión" y recargar. Resultado esperado: aparece "Invitado: no se guarda nada".
+5. En "Iniciar sesión", pulsar "¿Olvidaste tu contraseña?", escribir tu correo y "Enviar código". Llega un código al correo.
+6. Escribir un código inventado y una contraseña nueva. Resultado esperado: un error y el botón "Enviar otro código".
+7. Escribir el código real y la contraseña nueva dos veces. Resultado esperado: "Contraseña actualizada". Entrar con la nueva contraseña.

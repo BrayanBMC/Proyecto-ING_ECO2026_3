@@ -1,20 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ResultadoCuenta, ServicioCuenta } from '../../src/adapters/auth/ServicioCuenta';
+import type { ServicioCuenta } from '../../src/adapters/auth/ServicioCuenta';
 import { App } from '../../src/ui/App';
 import { PaginaRegistro } from '../../src/ui/paginas/Registro';
 import { VERSION_POLITICA } from '../../src/core';
-
-const OK: ResultadoCuenta = { ok: true };
-
-function servicioFalso(cambios: Partial<ServicioCuenta> = {}) {
-  return {
-    registrar: vi.fn(async () => OK),
-    verificarCorreo: vi.fn(async () => OK),
-    reenviarCodigo: vi.fn(async () => OK),
-    registrarConsentimiento: vi.fn(async () => OK),
-    ...cambios,
-  } satisfies ServicioCuenta;
-}
+import { OK, servicioFalso } from './servicioFalso';
 
 function escribir(etiqueta: string, valor: string) {
   fireEvent.change(screen.getByLabelText(etiqueta), { target: { value: valor } });
