@@ -12,6 +12,8 @@ export const LONGITUD_MINIMA_CONTRASENA = 10;
 export const LONGITUD_MAXIMA_CONTRASENA = 128;
 export const LONGITUD_MAXIMA_NOMBRE = 60;
 
+const MENSAJE_NO_COINCIDEN = 'Las contraseñas no coinciden.';
+
 export const esquemaRegistro = z
   .object({
     nombre: z
@@ -25,18 +27,14 @@ export const esquemaRegistro = z
       .min(LONGITUD_MINIMA_CONTRASENA, `La contraseña debe tener al menos ${LONGITUD_MINIMA_CONTRASENA} caracteres.`)
       .max(LONGITUD_MAXIMA_CONTRASENA, `La contraseña admite hasta ${LONGITUD_MAXIMA_CONTRASENA} caracteres.`),
     confirmacion: z.string(),
-    aceptaPolitica: z.boolean(),
+    // Se valida en el propio campo para que el error salga aunque fallen otros campos.
+    aceptaPolitica: z
+      .boolean()
+      .refine((acepta) => acepta, 'Debes aceptar la política de tratamiento de datos para crear la cuenta.'),
   })
   .superRefine((datos, ctx) => {
     if (datos.confirmacion !== datos.contrasena) {
-      ctx.addIssue({ code: 'custom', path: ['confirmacion'], message: 'Las contraseñas no coinciden.' });
-    }
-    if (!datos.aceptaPolitica) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['aceptaPolitica'],
-        message: 'Debes aceptar la política de tratamiento de datos para crear la cuenta.',
-      });
+      ctx.addIssue({ code: 'custom', path: ['confirmacion'], message: MENSAJE_NO_COINCIDEN });
     }
   });
 
@@ -59,6 +57,10 @@ export function validarRegistro(datos: DatosRegistro): ResultadoValidacion<Regis
     if (campo && errores[campo] === undefined) {
       errores[campo] = problema.message;
     }
+  }
+  // zod 4 no corre superRefine si algún campo falla; la confirmación se revisa aquí también.
+  if (errores.confirmacion === undefined && datos.confirmacion !== datos.contrasena) {
+    errores.confirmacion = MENSAJE_NO_COINCIDEN;
   }
   return { ok: false, errores };
 }
