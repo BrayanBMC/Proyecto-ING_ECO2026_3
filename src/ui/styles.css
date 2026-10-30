@@ -360,6 +360,19 @@ a {
   font-size: var(--t-lg);
 }
 
+summary {
+  cursor: pointer;
+}
+
+.resumen-titulo {
+  display: inline;
+  font-size: var(--t-lg);
+}
+
+.comparar-delta {
+  margin: 1rem 0 0.5rem;
+}
+
 .pasos {
   margin: 0.5rem 0 0;
   display: grid;
