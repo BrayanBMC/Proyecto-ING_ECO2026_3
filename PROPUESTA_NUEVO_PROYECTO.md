@@ -33,7 +33,7 @@ Versiones consultadas el 29-oct-2026 en `registry.npmjs.org/<paquete>/latest`.
 | Gráficos | Chart.js | 4.6.1 (MIT) | Recharts | Canvas exportable como imagen al PDF |
 | Fórmulas en pantalla | KaTeX con salida MathML | 0.19.1 (MIT) | MathJax | Renderiza LaTeX sin estilos inline; compatible con CSP estricta |
 | Testing | Vitest + fast-check + Playwright | 5.0.5 (MIT) · 4.10.2 (MIT) · 1.64.1 (Apache-2.0) | Jest | Nativo de Vite; pruebas de propiedades sobre el motor |
-| CI/CD | GitHub Actions (CI y despliegue con `wrangler pages deploy` a Cloudflare Pages) | Node 24 | Integración Git de Cloudflare, Vercel Hobby, Netlify | Publica solo si las pruebas pasan; cabeceras vía `_headers` |
+| CI/CD | GitHub Actions (CI y despliegue con `wrangler deploy` al Worker `proyecto-ing-eco2026-3` de Cloudflare, solo archivos estáticos) | Node 24 | Integración Git de Cloudflare, Cloudflare Pages, Vercel Hobby, Netlify | Publica solo si las pruebas pasan; cabeceras vía `_headers` |
 
 TypeScript 7.0.2 es la última versión publicada, pero se elige la rama 6.0, que es la que usan como dependencia de desarrollo fast-check, lucide-react y better-auth. Se pasará a la 7 cuando typescript-eslint la soporte (verificar).
 
@@ -152,7 +152,7 @@ Todos los servicios piden una cuenta gratuita (correo o GitHub). Ninguno pide ta
 **Combinación elegida:** GitHub (repo + Actions + Dependabot), Cloudflare Pages (sitio) y Neon (cuentas y datos).
 - Son tres proveedores, todos sin tarjeta según su fuente y con registro por correo o GitHub.
 - Ninguno necesita keep-alive: el sitio es estático y Neon despierta solo.
-- El despliegue lo hace GitHub Actions (`.github/workflows/ci-cd.yml`) con `wrangler pages deploy`, y solo después de que pasan lint, tipos, pruebas, auditoría y build. No se usa la integración Git de Cloudflare porque esa publica aunque las pruebas fallen (decisión de la iteración 0).
+- El despliegue lo hace GitHub Actions (`.github/workflows/ci-cd.yml`) con `wrangler deploy` al Worker `proyecto-ing-eco2026-3` (configuración en `wrangler.jsonc`), y solo después de que pasan lint, tipos, pruebas, auditoría y build. Se usa un Worker con archivos estáticos en lugar de Pages porque es el proyecto que se creó en la cuenta; las solicitudes a archivos estáticos son gratis e ilimitadas ([precios de Workers](https://developers.cloudflare.com/workers/platform/pricing/)) y `_headers` funciona igual ([docs](https://developers.cloudflare.com/workers/static-assets/headers/)). No se usa la integración Git de Cloudflare porque esa publica aunque las pruebas fallen.
 - Las URL de vista previa y la de producción se registran como dominios de confianza en Managed Better Auth, que solo redirige a dominios de confianza.
 
 ## 5. Seguridad y normativa
@@ -440,7 +440,7 @@ Están en el orden en que se construyen. Primero el acceso, porque decide dónde
 | Servicio | Costo | ¿Tarjeta? (fuente) | ¿Expira? | Al exceder el límite |
 |---|---|---|---|---|
 | GitHub Free (repo público, Actions, Dependabot, Pages) | 0 COP | No ([GitHub](https://docs.github.com/en/billing/get-started/how-billing-works)) | No | Actions es gratis en repos públicos; Pages responde 429. Sin método de pago no hay cobro |
-| Cloudflare Pages Free | 0 COP | No ([UCLA](https://humtech.ucla.edu/web-support/student-site-web-hosting-options/how-to-publish-a-site-with-cloudflare/)); no activar Zero Trust | No | Los builds se detienen; el sitio sigue publicado |
+| Cloudflare Workers Free (solo archivos estáticos) | 0 COP | No (cuenta creada sin tarjeta); no activar Zero Trust | No | Los archivos estáticos son gratis e ilimitados; el plan Free no tiene cobro por excedente |
 | Neon Free (PostgreSQL, Managed Better Auth, Data API) | 0 COP | No ([Neon](https://neon.com/pricing)) | No ("no time limits") | El cómputo se suspende hasta el mes siguiente o fallan las escrituras; no borra datos ni cobra ([planes](https://neon.com/docs/introduction/plans)) |
 | Brevo Free (solo si hace falta SMTP propio) | 0 COP | No ([Brevo](https://www.brevo.com/free-smtp-server/)) | No | 300 correos/día; deja de enviar hasta el día siguiente |
 | Firebase Spark (solo plan B) | 0 COP | No ([Firebase](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)) | No | Al agotar la cuota el producto deja de responder hasta el siguiente ciclo |

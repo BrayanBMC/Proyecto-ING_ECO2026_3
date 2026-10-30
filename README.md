@@ -5,7 +5,7 @@ Simulador académico de créditos e ingeniería económica en pesos colombianos 
 - Calcula en el navegador con precisión decimal de 34 dígitos (decimal.js).
 - Modo invitado sin registro: calcula y exporta reportes sin guardar nada.
 - Modo registrado (desde HU-01): guarda perfil y simulaciones en Neon (PostgreSQL con RLS).
-- Costo $0: Cloudflare Pages, GitHub Actions y Neon Free, sin tarjeta.
+- Costo $0: Cloudflare Workers (solo archivos estáticos, gratis e ilimitados), GitHub Actions y Neon Free, sin tarjeta.
 
 El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 
@@ -40,8 +40,8 @@ Secretos del pipeline (se guardan en GitHub → Settings → Secrets and variabl
 
 | Nombre | Tipo | Uso |
 |---|---|---|
-| `CLOUDFLARE_API_TOKEN` | Secret | Desplegar en Cloudflare Pages (permiso "Cloudflare Pages: Edit") |
-| `CLOUDFLARE_ACCOUNT_ID` | Secret | Cuenta de Cloudflare donde vive el proyecto `interes-claro` |
+| `CLOUDFLARE_API_TOKEN` | Secret | Desplegar el Worker (token con permiso de cuenta "Workers Scripts: Edit") |
+| `CLOUDFLARE_ACCOUNT_ID` | Secret | Cuenta de Cloudflare donde vive el Worker `proyecto-ing-eco2026-3` |
 | `NEON_DATABASE_URL` | Secret | Desde HU-01: aplicar migraciones SQL |
 | `VITE_NEON_AUTH_URL`, `VITE_NEON_DATA_API_URL` | Variables | Desde HU-01: se inyectan en el build |
 
@@ -78,9 +78,11 @@ El pipeline `.github/workflows/ci-cd.yml` corre en cada push y pull request a `m
 2. Ejecuta lint, verificación de tipos y pruebas con cobertura.
 3. Ejecuta `npm audit --audit-level=high`.
 4. Genera el build.
-5. Si todo pasa y es un push a `main`, publica `dist/` en Cloudflare Pages (`https://interes-claro.pages.dev`).
+5. Si todo pasa y es un push a `main`, publica el `dist/` ya probado en el Worker `proyecto-ing-eco2026-3` con `wrangler deploy` (configuración en `wrangler.jsonc`). La URL es `https://proyecto-ing-eco2026-3.<tu-subdominio>.workers.dev`.
 
-Si faltan los secretos de Cloudflare, el despliegue se omite con un aviso y el pipeline sigue en verde. Dependabot revisa dependencias de npm y de Actions cada semana.
+En `develop` y en los pull request el pipeline prueba y construye, pero no despliega. Si faltan los secretos de Cloudflare, el despliegue se omite con un aviso y el pipeline sigue en verde. Dependabot revisa dependencias de npm y de Actions cada semana.
+
+El Worker no debe tener conectada la integración Git de Cloudflare (Settings → Build): esa integración publica sin correr las pruebas. Solo despliega GitHub Actions.
 
 ## Estructura
 
@@ -88,6 +90,7 @@ Si faltan los secretos de Cloudflare, el despliegue se omite con un aviso y el p
 src/core/        Motor financiero puro (sin UI, red ni almacenamiento)
 src/ui/          Componentes React y estilos
 tests/unit/      Pruebas unitarias (Vitest)
-public/_headers  Cabeceras de seguridad para Cloudflare Pages
+public/_headers  Cabeceras de seguridad (Cloudflare las aplica a los archivos estáticos)
+wrangler.jsonc   Configuración del Worker que sirve dist/
 .github/         CI/CD y Dependabot
 ```

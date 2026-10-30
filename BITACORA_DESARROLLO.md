@@ -58,3 +58,10 @@ Otras verificaciones locales: `npm run lint` sin errores, `npm run typecheck` si
 2. Ir a `http://localhost:5173`.
 3. Revisar la página inicial; no hay datos que ingresar en esta iteración. Pulsar `Tab` una vez y luego `Enter`.
 4. Resultado esperado: al pulsar `Tab` aparece el enlace "Saltar al contenido", que lleva a la sección principal. La cabecera muestra "Invitado: no se guarda nada" y se ven 4 módulos, con el simulador en el bloque grande. Con el sistema en modo oscuro, la página usa la paleta oscura. Para las pruebas, ejecutar `npm run coverage` y ver 28 pruebas en verde con 100 % de cobertura.
+
+### Ajuste posterior: despliegue en Cloudflare Workers (30 de octubre de 2026)
+
+- **Problema:** se creó en Cloudflare un Worker llamado `proyecto-ing-eco2026-3` con la integración Git activa. Ese Worker construyó `main`, que solo tenía el "Initial commit", y falló con "Could not detect a directory containing static files". Además, esa integración publica sin correr las pruebas.
+- **Decisión:** se usa ese Worker en lugar de un proyecto de Pages. Cloudflare sirve los archivos estáticos de un Worker gratis y sin límite de solicitudes ([precios](https://developers.cloudflare.com/workers/platform/pricing/)) y aplica el mismo `_headers` ([docs](https://developers.cloudflare.com/workers/static-assets/headers/)).
+- **Cambios:** nuevo `wrangler.jsonc` (nombre del Worker, `assets.directory = ./dist/` y `not_found_handling = single-page-application`). El job `deploy` de `ci-cd.yml` ahora descarga el código, recupera el `dist/` ya probado y ejecuta `wrangler deploy`; se quitó el paso que creaba el proyecto de Pages.
+- **Acción manual pendiente:** desconectar la integración Git del Worker (Settings → Build) para que solo despliegue GitHub Actions, y crear el token con permiso "Workers Scripts: Edit".

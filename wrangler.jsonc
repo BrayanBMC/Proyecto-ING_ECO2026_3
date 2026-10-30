@@ -1,0 +1,11 @@
+{
+  // Worker de Cloudflare que sirve el build estático (dist/).
+  // Solo lo despliega GitHub Actions (.github/workflows/ci-cd.yml) después de que pasan las pruebas.
+  "name": "proyecto-ing-eco2026-3",
+  "compatibility_date": "2026-10-29",
+  "assets": {
+    "directory": "./dist/",
+    // SPA: las rutas que no son archivos devuelven index.html con 200.
+    "not_found_handling": "single-page-application"
+  }
+}
