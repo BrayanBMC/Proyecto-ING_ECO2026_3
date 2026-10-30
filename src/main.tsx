@@ -6,6 +6,12 @@ import '@fontsource/ibm-plex-sans/latin-600.css';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import './ui/styles.css';
 import { App } from './ui/App';
+import { crearServicioCuenta } from './adapters/auth/crearServicioCuenta';
+
+const servicioCuenta = crearServicioCuenta(
+  import.meta.env.VITE_NEON_AUTH_URL as string | undefined,
+  import.meta.env.VITE_NEON_DATA_API_URL as string | undefined,
+);
 
 const raiz = document.getElementById('root');
 if (!raiz) {
@@ -14,6 +20,6 @@ if (!raiz) {
 
 createRoot(raiz).render(
   <StrictMode>
-    <App />
+    <App servicioCuenta={servicioCuenta} />
   </StrictMode>,
 );

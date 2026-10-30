@@ -1,4 +1,4 @@
-# Propuesta técnica: Interés Claro (sucesor de EconomicApp)
+# Propuesta técnica: Amortiza
 
 Fecha de referencia: octubre de 2026. Fuente funcional: `PROJECT_SPEC.md`, más los requisitos que agregó el usuario el 29-oct-2026 (modo invitado, registro, login y perfil). Las citas al spec se escriben "sección X del spec". Todo dato marcado `(verificar)` no se pudo confirmar en una fuente oficial y tiene un plan B ya decidido.
 

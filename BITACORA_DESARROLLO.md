@@ -1,4 +1,4 @@
-# Bitácora de desarrollo: Interés Claro
+# Bitácora de desarrollo: Amortiza
 
 Registro historia por historia. Cada entrada describe qué se hizo, cómo y cómo se probó. La fuente de verdad del diseño es `PROPUESTA_NUEVO_PROYECTO.md`.
 
@@ -65,3 +65,86 @@ Otras verificaciones locales: `npm run lint` sin errores, `npm run typecheck` si
 - **Decisión:** se usa ese Worker en lugar de un proyecto de Pages. Cloudflare sirve los archivos estáticos de un Worker gratis y sin límite de solicitudes ([precios](https://developers.cloudflare.com/workers/platform/pricing/)) y aplica el mismo `_headers` ([docs](https://developers.cloudflare.com/workers/static-assets/headers/)).
 - **Cambios:** nuevo `wrangler.jsonc` (nombre del Worker, `assets.directory = ./dist/` y `not_found_handling = single-page-application`). El job `deploy` de `ci-cd.yml` ahora descarga el código, recupera el `dist/` ya probado y ejecuta `wrangler deploy`; se quitó el paso que creaba el proyecto de Pages.
 - **Acción manual pendiente:** desconectar la integración Git del Worker (Settings → Build) para que solo despliegue GitHub Actions, y crear el token con permiso "Workers Scripts: Edit".
+
+## [HU-01] - Registro con correo, contraseña y aceptación de la política de datos
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado y probado en local con un servicio de cuentas simulado. La prueba contra Neon real se hace en producción después de aplicar la migración (ver "Cómo probar").
+
+**Historia:** Como visitante quiero registrarme con correo y contraseña, aceptando la política de datos, para tener una cuenta donde guardar mi trabajo.
+
+### ¿Qué se hizo?
+
+- `src/core/cuenta.ts`: reglas del registro con zod. Nombre de 1 a 60 caracteres, correo válido (se recorta y pasa a minúsculas), contraseña de 10 a 128 caracteres, confirmación igual y casilla de la política marcada. También valida el código de verificación (4 a 8 dígitos). Fija `VERSION_POLITICA = '2026-10-30'`.
+- `src/adapters/auth/ServicioCuenta.ts`: puerto (interfaz) con `registrar`, `verificarCorreo`, `reenviarCodigo` y `registrarConsentimiento`.
+- `src/adapters/auth/neonCuenta.ts`: implementación con el SDK `@neondatabase/neon-js` 0.9.0-beta (Managed Better Auth + Data API).
+- `src/adapters/auth/crearServicioCuenta.ts`: crea el servicio solo si el build trae `VITE_NEON_AUTH_URL` y `VITE_NEON_DATA_API_URL`, y carga el SDK con import dinámico.
+- `src/adapters/auth/mensajes.ts`: traduce los códigos de error de Better Auth a mensajes en español.
+- `src/ui/navegacion.tsx`: enrutador mínimo con la History API (`useRuta`, `navegar`, `Enlace`).
+- `src/ui/paginas/Registro.tsx`: formulario en tres pasos: datos, código enviado al correo y confirmación.
+- `src/ui/paginas/PoliticaDatos.tsx`: política de tratamiento de datos en `/politica-de-datos`.
+- `src/ui/paginas/Inicio.tsx`: la página de inicio sale de `App.tsx`, que ahora solo arma la cabecera, el pie y las rutas. La cabecera tiene el botón "Crear cuenta".
+- `db/migrations/001_consentimiento.sql`: tabla `public.consentimiento` con RLS.
+- `.github/workflows/db-migrate.yml`: workflow manual "Migraciones de base de datos" que aplica los `.sql` con `psql`.
+- `public/_headers`: `connect-src` permite los dos hosts de Neon (Auth y Data API) y nada más.
+- `package.json`: `overrides` para que el SDK de Neon use versiones sin vulnerabilidades conocidas de zod y Better Auth.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Verificación por código:** el SMTP compartido de Neon solo envía códigos, no enlaces. Tras `auth.signUp.email`, Neon envía el código; `auth.emailOtp.verifyEmail` lo comprueba. Neon inicia sesión al verificar por defecto; si no hay sesión, el adaptador llama a `auth.signIn.email`. La contraseña se borra de la memoria del formulario cuando el registro termina.
+- **Prueba del consentimiento (Ley 1581, art. 9):** la autorización se pide con una casilla que empieza sin marcar. Después de verificar el correo se inserta una fila en `consentimiento` con la versión de la política. El cliente solo manda `version_politica`. La base pone `usuario_id` con `auth.user_id()` (el `sub` del JWT) y `aceptado_en` con `now()`, así nadie puede registrar un consentimiento a nombre de otro. RLS deja leer e insertar solo las filas propias. `UPDATE` y `DELETE` están revocados, así que la prueba no se puede alterar. La FK a `neon_auth."user"` con `ON DELETE CASCADE` borra los consentimientos al eliminar la cuenta (HU-05).
+- **Si falla el guardado del consentimiento:** la cuenta ya está verificada, así que la pantalla "Falta guardar tu aceptación" reintenta solo esa inserción, sin pedir otro código. Si el primer intento sí llegó a la base, el reintento choca con `UNIQUE (usuario_id, version_politica)` (código 23505) y el adaptador lo cuenta como éxito.
+- **Aislamiento del SDK beta:** la UI solo conoce `ServicioCuenta`. Las pruebas usan un servicio falso, y cambiar de proveedor solo toca `neonCuenta.ts`. El SDK se descarga cuando el visitante usa el registro, no al abrir la página de inicio.
+- **Accesibilidad:** cada campo tiene `<label>`. Los errores se enlazan con `aria-describedby` y marcan `aria-invalid`. El foco va al primer campo con error y, al cambiar de paso, al título. El campo del código usa `autocomplete="one-time-code"` e `inputmode="numeric"`.
+- **Dependencias:** el SDK de Neon trae `better-auth` 1.7.6 y zod 4.1/4.5, que `npm audit` marca como altas (GHSA-mrhx-c7xc-m3w5 en zod < 4.6.6). `overrides` fuerza la misma zod del proyecto y Better Auth 1.7.14.
+- **Cambio frente a la propuesta:** no se usa React Router. Con tres rutas, un enrutador de 40 líneas evita una dependencia.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/cuenta.test.ts`
+  - Test: acepta un registro válido.
+  - Test: criterio HU-01, sin marcar la política no es válido y se explica por qué.
+  - Test: normaliza el correo (espacios y mayúsculas) y recorta el nombre.
+  - Test: rechaza nombre vacío o de 61 caracteres, correo sin arroba, contraseña de 9 o 129 caracteres y confirmación distinta, cada uno con su mensaje.
+  - Test: acepta contraseñas de exactamente 10 y 128 caracteres.
+  - Test: da un solo mensaje por campo aunque fallen varias reglas.
+  - Test (propiedad con fast-check): sin aceptar la política nunca es válido, para cualquier nombre, correo y contraseña.
+  - Test: la versión de la política tiene formato de fecha ISO.
+  - Test: el código acepta de 4 a 8 dígitos y rechaza letras, espacios internos y largos fuera de rango.
+- `tests/unit/Registro.test.tsx`
+  - Test: criterio HU-01, sin marcar la política no se llama al servicio, se muestra el motivo y el foco va a la casilla.
+  - Test: la casilla empieza sin marcar y enlaza `/politica-de-datos`.
+  - Test: con el formulario vacío muestra los errores y enfoca "Nombre".
+  - Test: criterio HU-01, con datos válidos crea la cuenta, verifica el código y guarda el consentimiento con la versión vigente.
+  - Test: muestra el error del servicio si el correo ya tiene cuenta.
+  - Test: valida el formato del código antes de llamar al servicio.
+  - Test: si el código es incorrecto no guarda el consentimiento.
+  - Test: "Enviar otro código" reenvía y lo confirma en pantalla.
+  - Test: si falla el consentimiento, lo reintenta sin repetir la verificación.
+  - Test: sin URL de Neon informa que el registro no está disponible.
+  - Test: el botón "Crear cuenta" de la cabecera abre `/registro` sin recargar.
+  - Test: `/politica-de-datos` muestra versión, responsable y derechos.
+  - Test: una ruta desconocida muestra "Página no encontrada".
+  - Test: el botón Atrás del navegador vuelve a la página anterior.
+
+Verificación: `npm run typecheck` sin errores en local. Lint, pruebas con cobertura, auditoría y build se verifican en GitHub Actions al subir a `develop`.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+Una sola vez, después de fusionar el PR en `main`:
+
+1. En GitHub → Actions → "Migraciones de base de datos" → Run workflow (rama `main`). Debe terminar en verde.
+2. En la consola de Neon → Data API → pulsar "Refresh schema cache" para que la Data API vea la tabla `consentimiento`.
+
+Prueba:
+
+1. Abrir `https://proyecto-ing-eco2026-3.bacostap.workers.dev` y pulsar "Crear cuenta".
+2. Llenar nombre, un correo real, una contraseña de al menos 10 caracteres y repetirla. Dejar la casilla sin marcar y pulsar "Crear cuenta".
+3. Resultado esperado: aparece "Debes aceptar la política de tratamiento de datos para crear la cuenta." y no llega ningún correo.
+4. Marcar la casilla y pulsar "Crear cuenta". Resultado esperado: la pantalla cambia a "Revisa tu correo" y llega un correo de Neon con un código.
+5. Escribir el código y pulsar "Verificar correo". Resultado esperado: "Tu cuenta está lista".
+6. En Neon → SQL Editor: `select usuario_id, version_politica, aceptado_en from consentimiento;`. Resultado esperado: una fila con la versión `2026-10-30`.
+7. Repetir el registro con el mismo correo. Resultado esperado: "Ya existe una cuenta con ese correo."
+
+Para las pruebas locales: `npm run coverage`.

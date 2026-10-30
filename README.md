@@ -4,7 +4,7 @@ Simulador académico de créditos e ingeniería económica en pesos colombianos 
 
 - Calcula en el navegador con precisión decimal de 34 dígitos (decimal.js).
 - Modo invitado sin registro: calcula y exporta reportes sin guardar nada.
-- Modo registrado (desde HU-01): guarda perfil y simulaciones en Neon (PostgreSQL con RLS).
+- Registro con correo, contraseña, código de verificación y aceptación de la política de datos (HU-01). Más adelante guardará perfil y simulaciones en Neon (PostgreSQL con RLS).
 - Costo $0: Cloudflare Workers (solo archivos estáticos, gratis e ilimitados), GitHub Actions y Neon Free, sin tarjeta.
 
 El avance historia por historia está en `BITACORA_DESARROLLO.md`.
@@ -33,8 +33,12 @@ Copia `.env.example` como `.env.local` (este archivo no se sube al repositorio).
 
 | Variable | Obligatoria | Desde | Descripción |
 |---|---|---|---|
-| `VITE_NEON_AUTH_URL` | No (aún no se usa) | HU-01 | URL de Managed Better Auth de Neon. Es pública por diseño |
-| `VITE_NEON_DATA_API_URL` | No (aún no se usa) | HU-01 | URL de la Data API de Neon. Es pública por diseño; RLS protege los datos |
+| `VITE_NEON_AUTH_URL` | Para el registro | HU-01 | URL de Managed Better Auth de Neon. Es pública por diseño |
+| `VITE_NEON_DATA_API_URL` | Para el registro | HU-01 | URL de la Data API de Neon. Es pública por diseño; RLS protege los datos |
+
+Sin estas dos variables la app funciona en modo invitado y la página de registro dice "El registro no está disponible en este momento". Para probar el registro en `localhost`, agrega `http://localhost:5173` como dominio de confianza en Neon → Auth → Configuration.
+
+Si cambias el proyecto de Neon, actualiza también los dos hosts de `connect-src` en `public/_headers`; la CSP bloquea cualquier otro.
 
 Secretos del pipeline. Se guardan en GitHub → Settings → Environments → **`neon`** → Environment secrets, nunca en el código. Los dos jobs del pipeline declaran `environment: neon` para poder leerlos. Las URL de Neon se aceptan como secreto o como variable.
 
@@ -82,13 +86,23 @@ El pipeline `.github/workflows/ci-cd.yml` corre en cada push y pull request a `m
 
 En `develop` y en los pull request el pipeline prueba y construye, pero no despliega. Si faltan los secretos de Cloudflare, el despliegue se omite con un aviso y el pipeline sigue en verde. Dependabot revisa dependencias de npm y de Actions cada semana.
 
+### Migraciones de base de datos
+
+El workflow `.github/workflows/db-migrate.yml` ("Migraciones de base de datos") aplica en orden los archivos de `db/migrations/` con `psql`, usando el secreto `NEON_DATABASE_URL`. Se ejecuta a mano: GitHub → Actions → "Migraciones de base de datos" → Run workflow. Los archivos son idempotentes, así que repetirlo no hace daño. Después de cada migración, en Neon → Data API, pulsa "Refresh schema cache".
+
+| Archivo | Historia | Qué crea |
+|---|---|---|
+| `001_consentimiento.sql` | HU-01 | Tabla `consentimiento` con RLS: cada usuario solo lee e inserta sus filas, y nadie las modifica |
+
 El Worker no debe tener conectada la integración Git de Cloudflare (Settings → Build): esa integración publica sin correr las pruebas. Solo despliega GitHub Actions.
 
 ## Estructura
 
 ```
-src/core/        Motor financiero puro (sin UI, red ni almacenamiento)
-src/ui/          Componentes React y estilos
+src/core/        Motor financiero y reglas de validación puras (sin UI, red ni almacenamiento)
+src/adapters/    Conexión con servicios externos (auth/: cuentas con Neon)
+src/ui/          Componentes React, páginas, enrutador y estilos
+db/migrations/   SQL de la base de datos en Neon (tablas y políticas RLS)
 tests/unit/      Pruebas unitarias (Vitest)
 public/_headers  Cabeceras de seguridad (Cloudflare las aplica a los archivos estáticos)
 wrangler.jsonc   Configuración del Worker que sirve dist/

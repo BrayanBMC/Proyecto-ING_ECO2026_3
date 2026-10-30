@@ -1,62 +1,68 @@
+import type { ServicioCuenta } from '../adapters/auth/ServicioCuenta';
+import { Enlace, useRuta } from './navegacion';
+import { PaginaInicio } from './paginas/Inicio';
+import { PaginaPolitica } from './paginas/PoliticaDatos';
+import { PaginaRegistro } from './paginas/Registro';
+
 export const NOMBRE_APP = 'Amortiza';
 
-const MODULOS = [
-  {
-    id: 'simulador',
-    titulo: 'Simulador de créditos',
-    detalle: 'Francés y Alemán, gracia, abonos extra y alerta de usura.',
-    destacado: true,
-  },
-  { id: 'compuesto', titulo: 'Interés compuesto', detalle: 'Despeja valor futuro, presente, tasa o periodos.' },
-  { id: 'anualidades', titulo: 'Anualidades', detalle: 'Vencidas y anticipadas: S, P y cuota.' },
-  { id: 'reparto', titulo: 'Reparto proporcional', detalle: 'Directo, inverso y compuesto, con suma exacta.' },
-] as const;
+interface Props {
+  /** Servicio de cuentas. Es null si el build no trae las URL de Neon. */
+  servicioCuenta?: ServicioCuenta | null;
+}
 
-export function App() {
+function Pagina({ ruta, servicioCuenta }: { ruta: string; servicioCuenta: ServicioCuenta | null }) {
+  switch (ruta.replace(/\/+$/, '') || '/') {
+    case '/':
+      return <PaginaInicio />;
+    case '/registro':
+      return <PaginaRegistro servicio={servicioCuenta} />;
+    case '/politica-de-datos':
+      return <PaginaPolitica />;
+    default:
+      return (
+        <section className="tarjeta" aria-labelledby="titulo-404">
+          <h1 id="titulo-404">Página no encontrada</h1>
+          <p>La dirección no existe.</p>
+          <Enlace className="boton" href="/">
+            Ir al inicio
+          </Enlace>
+        </section>
+      );
+  }
+}
+
+export function App({ servicioCuenta = null }: Props) {
+  const ruta = useRuta();
+
   return (
     <>
       <a className="saltar" href="#contenido">
         Saltar al contenido
       </a>
       <header className="cabecera">
-        <div className="marca">
+        <Enlace className="marca" href="/" aria-label={`${NOMBRE_APP}, ir al inicio`}>
           <span className="marca__logo" aria-hidden="true" />
           <span className="marca__nombre">{NOMBRE_APP}</span>
-        </div>
-        <span className="etiqueta-modo" role="status">
-          Invitado: no se guarda nada
-        </span>
+        </Enlace>
+        <nav className="cabecera__acciones" aria-label="Cuenta">
+          <span className="etiqueta-modo" role="status">
+            Invitado: no se guarda nada
+          </span>
+          {ruta !== '/registro' && (
+            <Enlace className="boton boton--pequeno" href="/registro">
+              Crear cuenta
+            </Enlace>
+          )}
+        </nav>
       </header>
 
-      <main id="contenido" className="contenido">
-        <section className="presentacion" aria-labelledby="titulo-principal">
-          <h1 id="titulo-principal">Simula tu crédito y entiende cada cuota</h1>
-          <p className="presentacion__texto">
-            Calcula tablas de amortización, tasas e intereses en pesos colombianos, y mira la fórmula detrás de cada
-            resultado.
-          </p>
-        </section>
-
-        <section aria-labelledby="titulo-modulos">
-          <h2 id="titulo-modulos" className="titulo-seccion">
-            Módulos
-          </h2>
-          <ul className="bento">
-            {MODULOS.map((modulo) => (
-              <li key={modulo.id} className={'destacado' in modulo ? 'bento__celda bento__celda--grande' : 'bento__celda'}>
-                <h3 className="bento__titulo">{modulo.titulo}</h3>
-                <p className="bento__detalle">{modulo.detalle}</p>
-                <span className="bento__estado">En construcción</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <main id="contenido" className="contenido" tabIndex={-1}>
+        <Pagina ruta={ruta} servicioCuenta={servicioCuenta} />
       </main>
 
       <footer className="pie">
-        <p>
-          Proyecto académico de Ingeniería Económica.
-        </p>
+        <p>Proyecto académico de Ingeniería Económica.</p>
       </footer>
     </>
   );

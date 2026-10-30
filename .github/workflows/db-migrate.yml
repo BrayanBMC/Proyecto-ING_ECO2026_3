@@ -1,0 +1,35 @@
+name: Migraciones de base de datos
+
+# Se ejecuta a mano desde la pestaña Actions ("Run workflow").
+# Aplica en orden los archivos de db/migrations/ sobre la base de Neon.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrar:
+    name: Aplicar db/migrations en Neon
+    runs-on: ubuntu-latest
+    environment: neon
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Aplicar migraciones
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$NEON_DATABASE_URL" ]; then
+            echo "::error::Falta el secreto NEON_DATABASE_URL en el environment neon."
+            exit 1
+          fi
+          for archivo in $(ls db/migrations/*.sql | sort); do
+            echo "Aplicando $archivo"
+            psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$archivo"
+          done
+          echo "Migraciones aplicadas. Recuerda refrescar el caché de esquema de la Data API en Neon."
