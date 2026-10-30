@@ -1,3 +1,5 @@
+export const NOMBRE_APP = 'Amortiza';
+
 const MODULOS = [
   {
     id: 'simulador',
@@ -19,7 +21,7 @@ export function App() {
       <header className="cabecera">
         <div className="marca">
           <span className="marca__logo" aria-hidden="true" />
-          <span className="marca__nombre">Interés Claro</span>
+          <span className="marca__nombre">{NOMBRE_APP}</span>
         </div>
         <span className="etiqueta-modo" role="status">
           Invitado: no se guarda nada
@@ -53,8 +55,8 @@ export function App() {
 
       <footer className="pie">
         <p>
-          Proyecto académico de Ingeniería Económica. No es asesoría financiera ni está asociado con EconomicApp ni con
-          ninguna entidad.
+          {NOMBRE_APP} es un proyecto académico de Ingeniería Económica. No es asesoría financiera ni está asociado con
+          ninguna entidad financiera.
         </p>
       </footer>
     </>
