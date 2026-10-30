@@ -29,12 +29,33 @@ export {
   calcularTasa,
 } from './tasas';
 export type { Frecuencia, TipoTasa, PasoTasa, ResultadoTasa } from './tasas';
-export { cuotaFrances, generarTabla } from './amortizacion';
-export type { Sistema, Fila, Tabla } from './amortizacion';
-export { compararSistemas } from './comparar';
+export { cuotaFrances, cuotasRestantes, generarTabla } from './amortizacion';
+export type { Sistema, Fila, Tabla, TipoGracia, Gracia, ModoAbono, AbonoExtra } from './amortizacion';
+export { compararSistemas, compararGracias } from './comparar';
 export type { Comparacion, ResumenSistema } from './comparar';
-export { MONTO_MAXIMO, PLAZO_MAXIMO, validarMonto, validarPlazo, validarTasa, validarSimulacion } from './simulador';
-export type { FormularioSimulacion, Simulacion, ErroresSimulacion } from './simulador';
+export {
+  MONTO_MAXIMO,
+  PLAZO_MAXIMO,
+  GRACIA_MAXIMA,
+  validarMonto,
+  validarPlazo,
+  validarTasa,
+  validarSimulacion,
+  validarGracia,
+  validarAbono,
+  validarIbc,
+} from './simulador';
+export type { FormularioSimulacion, Simulacion, ErroresSimulacion, ErroresAbono } from './simulador';
+export {
+  VIGENCIAS_IBC,
+  FACTOR_USURA,
+  usuraDesdeIbc,
+  fechaIso,
+  vigenciaActual,
+  ultimaVigencia,
+  evaluarUsura,
+} from './usura';
+export type { VigenciaIbc, EstadoUsura } from './usura';
 export { LONGITUD_MAXIMA_INSTITUCION, perfilInicial, esquemaPerfil, validarPerfil, armarExportacion } from './perfil';
 export type { Perfil, FormularioPerfil, ErroresPerfil } from './perfil';
 export type {

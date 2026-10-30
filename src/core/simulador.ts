@@ -96,3 +96,66 @@ export function validarSimulacion(f: FormularioSimulacion): ResultadoValidacion<
     },
   };
 }
+
+export const GRACIA_MAXIMA = 60;
+
+/** HU-12: periodos de gracia entre 0 y 60 (rango del spec). Vacío cuenta como 0. */
+export function validarGracia(texto: string): ResultadoValidacion<number, string> {
+  if (texto.trim() === '') {
+    return { ok: true, datos: 0 };
+  }
+  const g = parseNumeroEsCo(texto);
+  if (!g || !g.isInteger() || g.lt(0) || g.gt(GRACIA_MAXIMA)) {
+    return { ok: false, errores: `Los periodos de gracia deben ser un número entero entre 0 y ${GRACIA_MAXIMA}.` };
+  }
+  return { ok: true, datos: g.toNumber() };
+}
+
+export type ErroresAbono = Partial<Record<'periodo' | 'valor', string>>;
+
+/**
+ * HU-14: el abono va al final de un periodo de amortización que no sea el último,
+ * y no puede superar el saldo de ese periodo en la tabla sin abono.
+ */
+export function validarAbono(entrada: {
+  periodo: string;
+  valor: string;
+  /** Saldo de cada periodo en la tabla sin abono (índice = periodo). */
+  saldos: readonly Dec[];
+  gracia: number;
+  plazo: number;
+  formatear: (monto: Dec) => string;
+}): ResultadoValidacion<{ periodo: number; valor: Dec }, ErroresAbono> {
+  const { gracia, plazo } = entrada;
+  const primero = gracia + 1;
+  const ultimo = gracia + plazo - 1;
+  if (ultimo < primero) {
+    return { ok: false, errores: { periodo: 'Con una sola cuota no se puede hacer un abono extraordinario.' } };
+  }
+  const p = parseNumeroEsCo(entrada.periodo);
+  if (!p || !p.isInteger() || p.lt(primero) || p.gt(ultimo)) {
+    return { ok: false, errores: { periodo: `El abono va al final de un periodo entre ${primero} y ${ultimo}.` } };
+  }
+  const periodo = p.toNumber();
+  const valor = parseNumeroEsCo(entrada.valor);
+  if (!valor || valor.lte(0)) {
+    return { ok: false, errores: { valor: 'Escribe un abono mayor que $ 0.' } };
+  }
+  const saldo = entrada.saldos[periodo]!;
+  if (valor.gt(saldo)) {
+    return {
+      ok: false,
+      errores: { valor: `El abono supera el saldo del periodo ${periodo} (${entrada.formatear(saldo)}).` },
+    };
+  }
+  return { ok: true, datos: { periodo, valor } };
+}
+
+/** HU-15: IBC ingresado a mano cuando el dato publicado está vencido. */
+export function validarIbc(texto: string): ResultadoValidacion<Dec, string> {
+  const ibc = parseNumeroEsCo(texto);
+  if (!ibc || ibc.lt('0.01') || ibc.gt(100)) {
+    return { ok: false, errores: 'El IBC debe estar entre 0,01 % y 100 % EA.' };
+  }
+  return { ok: true, datos: ibc.div(100) };
+}

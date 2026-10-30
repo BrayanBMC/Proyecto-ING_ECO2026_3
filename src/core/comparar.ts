@@ -1,4 +1,4 @@
-import { generarTabla, type Sistema, type Tabla } from './amortizacion';
+import { generarTabla, type AbonoExtra, type Gracia, type Sistema, type Tabla } from './amortizacion';
 import type { Dec, EscalaMonetaria } from './decimal';
 
 /**
@@ -21,13 +21,21 @@ export interface Comparacion {
 
 function resumir(tabla: Tabla): ResumenSistema {
   return {
-    cuotaInicial: tabla.filas[1]!.cuota, // el plazo es ≥ 1, así que la fila 1 siempre existe
+    // Primera cuota de amortización (después de la gracia); el plazo es ≥ 1, así que siempre existe.
+    cuotaInicial: tabla.filas.find((f) => f.periodo > 0 && !f.gracia)!.cuota,
     totalIntereses: tabla.totalIntereses,
     totalPagado: tabla.totalPagado,
   };
 }
 
-export function compararSistemas(entrada: { capital: Dec; tasa: Dec; plazo: number; escala: EscalaMonetaria }): Comparacion {
+export function compararSistemas(entrada: {
+  capital: Dec;
+  tasa: Dec;
+  plazo: number;
+  escala: EscalaMonetaria;
+  gracia?: Gracia | undefined;
+  abono?: AbonoExtra | undefined;
+}): Comparacion {
   const tabla = (sistema: Sistema) => resumir(generarTabla({ ...entrada, sistema }));
   const frances = tabla('frances');
   const aleman = tabla('aleman');
@@ -35,4 +43,20 @@ export function compararSistemas(entrada: { capital: Dec; tasa: Dec; plazo: numb
     ? null
     : frances.totalIntereses.minus(aleman.totalIntereses).div(aleman.totalIntereses);
   return { frances, aleman, sobrecosto };
+}
+
+/** HU-13: intereses totales con gracia muerta y con gracia de solo intereses, y la diferencia. */
+export function compararGracias(entrada: {
+  capital: Dec;
+  tasa: Dec;
+  plazo: number;
+  sistema: Sistema;
+  escala: EscalaMonetaria;
+  periodos: number;
+}) {
+  const intereses = (tipo: Gracia['tipo']) =>
+    generarTabla({ ...entrada, gracia: { tipo, periodos: entrada.periodos } }).totalIntereses;
+  const muerta = intereses('muerta');
+  const conIntereses = intereses('intereses');
+  return { muerta, conIntereses, diferencia: muerta.minus(conIntereses) };
 }

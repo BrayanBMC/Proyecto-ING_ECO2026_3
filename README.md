@@ -28,6 +28,10 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-09 | Tasas anticipadas | Acepta tasas nominales anticipadas (por ejemplo, 30 % trimestre anticipado) con el paso i_v = i_a / (1 − i_a), y rechaza j_a/m ≥ 1. |
 | HU-10 | Tabla de amortización | Tabla Francés (cuota fija) o Alemán (abono fijo), con la fila 0 del desembolso, interés, abono, saldo y totales. El saldo final siempre es 0. |
 | HU-11 | Comparar sistemas | "Comparar sistemas" muestra Francés frente a Alemán para el mismo crédito: cuota inicial, total de intereses, total pagado y cuánto más intereses paga el Francés (Δ). |
+| HU-12 | Gracia muerta | De 0 a 60 periodos sin pagar; el interés se suma a la deuda y la cuota se calcula después sobre el saldo mayor. |
+| HU-13 | Gracia con pago de intereses | En la gracia solo se paga el interés y el saldo no cambia. La tarjeta "Costo de la gracia" muestra cuántos intereses de más cuesta la gracia muerta. |
+| HU-14 | Abono extraordinario | Un abono al final de un periodo que reduce la cuota (mismo plazo) o el plazo (misma cuota). Si supera el saldo del periodo, sale el error y la tabla no cambia. |
+| HU-15 | Alerta de usura | Compara la EA del crédito con la usura (1,5 × IBC certificado). Si el dato del mes venció, avisa y deja escribir el IBC a mano. El IBC se actualiza cada mes en `src/core/usura.ts`. |
 
 ## 1. Requisitos previos
 

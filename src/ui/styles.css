@@ -368,6 +368,37 @@ summary {
   margin: 1rem 0 0.5rem;
 }
 
+.fila-gracia {
+  color: var(--texto-secundario);
+}
+
+.etiqueta-fila {
+  font-size: var(--t-xs);
+  font-family: var(--fuente);
+}
+
+.estado {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--t-md);
+  border-left: 4px solid currentColor;
+  padding-left: 0.75rem;
+}
+
+.estado--mal {
+  color: var(--error);
+}
+
+.estado--bien {
+  color: var(--exito);
+}
+
+.aviso-advertencia {
+  margin: 0;
+  color: var(--advertencia);
+  font-weight: 600;
+}
+
 .pasos {
   margin: 0.5rem 0 0;
   display: grid;
