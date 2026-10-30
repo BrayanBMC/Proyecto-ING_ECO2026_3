@@ -1,0 +1,229 @@
+/* Tokens de diseño: sección 6 de PROPUESTA_NUEVO_PROYECTO.md */
+:root {
+  --fondo: #f6f7f4;
+  --superficie: #ffffff;
+  --texto: #14202b;
+  --texto-secundario: #4b5866;
+  --acento: #0a6b63;
+  --sobre-acento: #ffffff;
+  --exito: #1e6b3c;
+  --error: #b3261e;
+  --advertencia: #8a5000;
+  --borde: #d9ddd6;
+
+  --fuente: 'IBM Plex Sans', system-ui, sans-serif;
+  --fuente-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Escala modular 1,2 con base de 16 px */
+  --t-xs: 0.8125rem;
+  --t-base: 1rem;
+  --t-md: 1.1875rem;
+  --t-lg: 1.4375rem;
+  --t-xl: 1.75rem;
+  --t-2xl: 2.0625rem;
+
+  --radio: 14px;
+  --espacio: 1rem;
+  --foco: 3px solid var(--acento);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0e1417;
+    --superficie: #172127;
+    --texto: #e6edf0;
+    --texto-secundario: #9aa8b0;
+    --acento: #4fd1c1;
+    --sobre-acento: #0e1417;
+    --exito: #6fd08c;
+    --error: #ff8f85;
+    --advertencia: #f2bd4b;
+    --borde: #2a3840;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--fuente);
+  font-size: 100%;
+  line-height: 1.5;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  font-weight: 600;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: var(--foco);
+  outline-offset: 2px;
+}
+
+.saltar {
+  position: absolute;
+  left: -999px;
+  top: 0.5rem;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radio);
+  z-index: 10;
+}
+
+.saltar:focus {
+  left: 0.5rem;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem var(--espacio);
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: var(--t-md);
+}
+
+.marca__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--acento);
+}
+
+.etiqueta-modo {
+  font-size: var(--t-xs);
+  color: var(--texto-secundario);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+
+.contenido {
+  flex: 1;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem var(--espacio) 3rem;
+  display: grid;
+  gap: 2.5rem;
+}
+
+.presentacion h1 {
+  font-size: var(--t-xl);
+  max-width: 30ch;
+}
+
+.presentacion__texto {
+  color: var(--texto-secundario);
+  font-size: var(--t-md);
+  max-width: 60ch;
+}
+
+.titulo-seccion {
+  font-size: var(--t-lg);
+  margin-bottom: 1rem;
+}
+
+.bento {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espacio);
+  grid-template-columns: 1fr;
+}
+
+.bento__celda {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  min-height: 44px;
+}
+
+.bento__titulo {
+  font-size: var(--t-md);
+}
+
+.bento__detalle {
+  margin: 0;
+  color: var(--texto-secundario);
+}
+
+.bento__estado {
+  justify-self: start;
+  font-size: var(--t-xs);
+  font-family: var(--fuente-mono);
+  color: var(--advertencia);
+}
+
+.pie {
+  padding: 1.5rem var(--espacio);
+  border-top: 1px solid var(--borde);
+  color: var(--texto-secundario);
+  font-size: var(--t-xs);
+  text-align: center;
+}
+
+@media (min-width: 48rem) {
+  .presentacion h1 {
+    font-size: var(--t-2xl);
+  }
+
+  .bento {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .bento__celda--grande {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
