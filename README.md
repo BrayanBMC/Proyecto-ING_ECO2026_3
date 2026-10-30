@@ -6,7 +6,8 @@ Simulador académico de créditos e ingeniería económica en pesos colombianos 
 - Modo invitado sin registro: calcula y exporta reportes sin guardar nada.
 - Registro con correo, contraseña, código de verificación y aceptación de la política de datos (HU-01). Inicio y cierre de sesión (HU-02) y recuperación de contraseña con código al correo (HU-03).
 - Simulador de créditos (HU-07 a HU-10): tasas nominales vencidas, anticipadas y efectivas con su EA y tasa periódica, y tabla Francés o Alemán.
-- En Neon → Settings → Better Auth deben estar activos "Sign-up with Email", "Verify at Sign-up" y el método "Verification code"; si no, no llegan los códigos. Más adelante guardará perfil y simulaciones en Neon (PostgreSQL con RLS).
+- Perfil, consentimientos y (más adelante) simulaciones se guardan en Neon (PostgreSQL con RLS).
+- En Neon → Settings → Better Auth deben estar activos "Sign-up with Email", "Verify at Sign-up" y el método "Verification code"; si no, no llegan los códigos.
 - Costo $0: Cloudflare Workers (solo archivos estáticos, gratis e ilimitados), GitHub Actions y Neon Free, sin tarjeta.
 
 El avance historia por historia está en `BITACORA_DESARROLLO.md`.
