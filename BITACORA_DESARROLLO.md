@@ -260,3 +260,51 @@ Prueba:
 4. En "Eliminar mi cuenta", escribir una contraseña equivocada. Resultado esperado: "Correo o contraseña incorrectos."
 5. Escribir la contraseña correcta y pulsar "Eliminar mi cuenta". Resultado esperado: "Tu cuenta fue eliminada" y la cabecera vuelve a "Invitado". Intentar iniciar sesión con esa cuenta: "Correo o contraseña incorrectos."
 6. Como invitado, abrir las herramientas del navegador (F12) → Application: `localStorage`, `sessionStorage`, IndexedDB y cookies del sitio están vacíos.
+
+## [HU-07 a HU-10] - Simulador: datos del crédito, tasas y tabla de amortización
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions. No requiere migraciones.
+
+**Historias:**
+- HU-07: ingresar monto, plazo y frecuencia de pago con validación inmediata.
+- HU-08: ingresar la tasa como nominal o efectiva y ver la tasa periódica equivalente antes de la tabla.
+- HU-09: ingresar tasas nominales anticipadas (convención colombiana).
+- HU-10: generar la tabla de amortización Francés o Alemán con la fila del desembolso.
+
+### ¿Qué se hizo?
+
+- `src/core/tasas.ts`: las fórmulas de tasas de la sección 7.1 de la propuesta (nominal vencida y anticipada → EA, anticipada ↔ vencida, EA → nominal, equivalencia entre frecuencias, EA → periódica) y `calcularTasa`, que devuelve EA, tasa del periodo de pago y los pasos del cálculo.
+- `src/core/amortizacion.ts`: `cuotaFrances` y `generarTabla` (Francés y Alemán).
+- `src/core/simulador.ts`: validación del formulario con los rangos del spec (monto ≥ 1, plazo 1-360, tasa 0,01-100 %) y la regla j_a/m < 1 de las tasas anticipadas.
+- `src/ui/paginas/Simulador.tsx` (`/simulador`): formulario, tarjeta "Tasa que se aplica" con "¿Cómo se calculó?", resumen (primera cuota, total de intereses, total pagado) y la tabla.
+- `src/ui/formato.ts`: formato es-CO de pesos (`Intl.NumberFormat('es-CO', COP)`) y porcentajes.
+- Inicio: el módulo "Simulador de créditos" ahora tiene el botón "Abrir simulador".
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Precisión (sección 7.2):** todo con `Decimal` a 34 dígitos. Las tasas nunca se redondean. Los montos se redondean en cada fila a la escala elegida (0 o 2) con `ROUND_HALF_UP`, como `REDONDEAR` de Excel.
+- **Tasas:** nominal vencida $EA=(1+j/m)^m-1$; anticipada $i_v=\frac{i_a}{1-i_a}$ y $EA=(1+i_v)^m-1$; efectiva del periodo $EA=(1+i)^m-1$. Luego la tasa del periodo de pago es $(1+EA)^{1/m_p}-1$.
+- **Francés:** $R=\frac{P\,i}{1-(1+i)^{-n}}$, redondeada una vez; con $i=0$, $R=P/n$. Cada fila: $I_k$ = saldo × i redondeado, $A_k=R-I_k$.
+- **Alemán:** $A=P/n$ redondeado una vez; $R_k=A+I_k$.
+- **Cierre exacto:** la última fila abona todo el saldo, así que el saldo final es 0 y $\sum A_k=P$; el residuo del redondeo queda en la última cuota. Con montos muy pequeños el abono nunca supera el saldo.
+- **Validación al salir del campo (HU-07):** `onBlur` revisa el campo; "Simular" revisa todo.
+- **Escala del perfil (HU-04):** con sesión, el simulador lee el perfil y aplica sola la escala guardada. Sin sesión arranca en 0 decimales.
+- **Modo invitado (HU-06):** el simulador no pide cuenta y no guarda nada.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/tasas.test.ts`: T1 (24 % NMV → EA 26,824179 %, ida y vuelta exacta a 30 dígitos), T2 (30 % NTA: i_a 7,5 %, i_v 8,108108 %, EA 36,5945 %), ida y vuelta anticipada ↔ vencida, EA → nominal, misma frecuencia, criterios de HU-08 y HU-09 con los pasos, y la propiedad nominal → EA → periódica = j/m con tolerancia 1e-30 (300 casos).
+- `tests/unit/amortizacion.test.ts`: T3 (escala 2: R 916.799,92, I₁ 150.000,00, A₁ 766.799,92, I₂ 138.498,00, T_I ≈ 1.001.599), T3b (escala 0: cuota 916.800, residuo ≤ 6, Σ abonos = P), T4 (Alemán: abono 1.000.000, R₁ 1.120.000, R₁₂ 1.010.000, T_I 780.000), T5 (i = 0), montos pequeños sin saldo negativo, y la propiedad Σ abonos = P, saldo final 0, saldos ≥ 0 y no crecientes (200 casos con P hasta 10¹², n hasta 360).
+- `tests/unit/simulador.test.ts`: rangos de monto, plazo y tasa; criterios de HU-07, HU-08 y HU-09.
+- `tests/unit/Simulador.test.tsx`: los criterios de HU-07 a HU-10 en pantalla, la escala de 2 decimales, la escala del perfil y la entrada del invitado desde el inicio.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+1. Abrir la app y pulsar "Abrir simulador" (sin iniciar sesión).
+2. Escribir monto 0 y salir del campo. Resultado esperado: "El monto debe estar entre $ 1 y $ 1.000.000.000.000."
+3. Escribir monto 10.000.000, 12 cuotas, tasa 24, "Nominal vencida", capitalización "Mensual" y pulsar "Simular". Resultado esperado: EA 26,8242 % y tasa por mes 2,0000 %.
+4. Cambiar a tasa 1,5, "Efectiva", periodo "Mensual" y simular. Resultado esperado: fila 0 con saldo $ 10.000.000, cuota $ 916.800 y saldo final $ 0.
+5. Elegir "Alemán" con monto 12.000.000 y tasa 1 efectiva mensual. Resultado esperado: abono $ 1.000.000 en todas las filas y cuota de $ 1.120.000 a $ 1.010.000.
+6. Tasa 30, "Nominal anticipada", capitalización "Trimestral". Resultado esperado: EA 36,5945 % y, en "¿Cómo se calculó?", el paso i_v = i_a / (1 − i_a).
