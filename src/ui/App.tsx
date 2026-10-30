@@ -30,10 +30,10 @@ export function App() {
 
       <main id="contenido" className="contenido">
         <section className="presentacion" aria-labelledby="titulo-principal">
-          <h1 id="titulo-principal">Ingeniería económica en pesos, con cada paso a la vista</h1>
+          <h1 id="titulo-principal">Simula tu crédito y entiende cada cuota</h1>
           <p className="presentacion__texto">
-            Simula créditos y resuelve ejercicios con precisión decimal exacta. Cada resultado muestra la fórmula y los
-            valores que la producen.
+            Calcula tablas de amortización, tasas e intereses en pesos colombianos, y mira la fórmula detrás de cada
+            resultado.
           </p>
         </section>
 
