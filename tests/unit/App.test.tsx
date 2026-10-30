@@ -8,6 +8,11 @@ describe('ui/App: página inicial', () => {
     expect(screen.getByRole('banner').textContent).toContain(NOMBRE_APP);
   });
 
+  it('muestra el título principal de la página de inicio', () => {
+    render(<App />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Simula tu crédito y entiende cada cuota');
+  });
+
   it('el pie solo indica que es un proyecto académico', () => {
     render(<App />);
     expect(screen.getByRole('contentinfo').textContent?.trim()).toBe('Proyecto académico de Ingeniería Económica.');
