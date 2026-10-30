@@ -1,7 +1,14 @@
 import { render, screen } from '@testing-library/react';
-import { App } from '../../src/ui/App';
+import { App, NOMBRE_APP } from '../../src/ui/App';
 
 describe('ui/App: página inicial', () => {
+  it('muestra el nombre de la aplicación en la cabecera y en el pie', () => {
+    render(<App />);
+    expect(NOMBRE_APP).toBe('Amortiza');
+    expect(screen.getByText(NOMBRE_APP)).toBeTruthy();
+    expect(screen.getByRole('contentinfo').textContent).toContain(NOMBRE_APP);
+  });
+
   it('muestra el título principal y los cuatro módulos del spec', () => {
     render(<App />);
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();

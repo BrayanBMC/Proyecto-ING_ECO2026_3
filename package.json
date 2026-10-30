@@ -1,8 +1,8 @@
 {
-  "name": "interes-claro",
+  "name": "amortiza",
   "private": true,
   "version": "0.1.0",
-  "description": "Simulador académico de créditos e ingeniería económica (sucesor de EconomicApp).",
+  "description": "Amortiza: simulador académico de créditos e ingeniería económica en pesos colombianos.",
   "type": "module",
   "engines": {
     "node": ">=22.12"
