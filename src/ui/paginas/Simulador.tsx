@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import {
   FRECUENCIAS,
   calcularTasa,
+  compararGracias,
   compararSistemas,
   generarTabla,
   nombreFrecuencia,
@@ -9,7 +10,11 @@ import {
   validarPlazo,
   validarSimulacion,
   validarTasa,
+  validarGracia,
+  type AbonoExtra,
   type Comparacion,
+  type Gracia,
+  type TipoGracia,
   type ErroresSimulacion,
   type EscalaMonetaria,
   type Frecuencia,
@@ -22,10 +27,14 @@ import {
 import type { ServicioCuenta, Usuario } from '../../adapters/auth/ServicioCuenta';
 import { Campo } from '../Campo';
 import { pesos, porcentaje } from '../formato';
+import { FormularioAbono } from './Abono';
+import { TarjetaUsura } from './Usura';
 
 interface Props {
   servicio?: ServicioCuenta | null;
   usuario?: Usuario | null;
+  /** Fecha para la vigencia de la usura; se puede fijar en las pruebas. */
+  hoy?: Date;
 }
 
 const INICIAL: FormularioSimulacion = {
@@ -47,8 +56,45 @@ const TIPOS: { valor: TipoTasa; nombre: string }[] = [
 interface Resultado {
   simulacion: Simulacion;
   tasa: ResultadoTasa;
-  tabla: Tabla;
+  gracia: Gracia;
+  /** Tabla sin abono extraordinario. */
+  base: Tabla;
   comparacion: Comparacion;
+}
+
+/** HU-13: costo de la gracia muerta frente a la gracia con pago de intereses. */
+function ComparacionGracias({ r, escala }: { r: Resultado; escala: EscalaMonetaria }) {
+  const { muerta, conIntereses, diferencia } = compararGracias({
+    capital: r.simulacion.monto,
+    tasa: r.tasa.periodica,
+    plazo: r.simulacion.plazo,
+    sistema: r.simulacion.sistema,
+    escala,
+    periodos: r.gracia.periodos,
+  });
+  return (
+    <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-gracias">
+      <h2 id="titulo-gracias">Costo de la gracia ({r.gracia.periodos} periodos)</h2>
+      <dl className="cifras">
+        <div>
+          <dt>Intereses con gracia muerta</dt>
+          <dd>{pesos(muerta, escala)}</dd>
+        </div>
+        <div>
+          <dt>Intereses pagando intereses en la gracia</dt>
+          <dd>{pesos(conIntereses, escala)}</dd>
+        </div>
+        <div>
+          <dt>Diferencia</dt>
+          <dd>{pesos(diferencia, escala)}</dd>
+        </div>
+      </dl>
+      <p className="tarjeta__texto">
+        En la gracia muerta no pagas nada y el interés se suma a la deuda, así que después pagas intereses sobre un
+        saldo mayor.
+      </p>
+    </section>
+  );
 }
 
 /** HU-11: Francés frente a Alemán para el mismo crédito. */
@@ -120,11 +166,20 @@ function sigla(tipo: TipoTasa, m: Frecuencia): string {
 }
 
 /** HU-07 a HU-10: datos del crédito, tasa equivalente y tabla de amortización. Funciona sin cuenta (HU-06). */
-export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
+export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props) {
   const [f, setF] = useState<FormularioSimulacion>(INICIAL);
   const [errores, setErrores] = useState<ErroresSimulacion>({});
   const [escala, setEscala] = useState<EscalaMonetaria>(0);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [graciaTexto, setGraciaTexto] = useState('');
+  const [tipoGracia, setTipoGracia] = useState<TipoGracia>('muerta');
+  const [errorGracia, setErrorGracia] = useState<string | undefined>();
+  const [abono, setAbono] = useState<AbonoExtra | null>(null);
+
+  const limpiarResultado = () => {
+    setResultado(null);
+    setAbono(null);
+  };
 
   // HU-04: con sesión, la escala de decimales del perfil se aplica sola.
   useEffect(() => {
@@ -140,12 +195,12 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
 
   const cambiar = <K extends keyof FormularioSimulacion>(campo: K, valor: FormularioSimulacion[K]) => {
     setF((previo) => ({ ...previo, [campo]: valor }));
-    setResultado(null);
+    limpiarResultado();
   };
 
   const cambiarEscala = (nueva: EscalaMonetaria) => {
     setEscala(nueva);
-    setResultado(null);
+    limpiarResultado();
   };
 
   // HU-07: validación al salir de cada campo.
@@ -166,23 +221,43 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
   const simular = (evento: FormEvent) => {
     evento.preventDefault();
     const validacion = validarSimulacion(f);
-    if (!validacion.ok) {
-      setErrores(validacion.errores);
-      setResultado(null);
+    const validacionGracia = validarGracia(graciaTexto);
+    setErrorGracia(validacionGracia.ok ? undefined : validacionGracia.errores);
+    if (!validacion.ok || !validacionGracia.ok) {
+      setErrores(validacion.ok ? {} : validacion.errores);
+      limpiarResultado();
       return;
     }
     setErrores({});
+    setAbono(null);
     const s = validacion.datos;
+    const gracia: Gracia = { tipo: tipoGracia, periodos: validacionGracia.datos };
     const tasa = calcularTasa({
       valor: s.tasa,
       tipo: s.tipoTasa,
       frecuenciaTasa: s.frecuenciaTasa,
       frecuenciaPago: s.frecuenciaPago,
     });
-    const tabla = generarTabla({ capital: s.monto, tasa: tasa.periodica, plazo: s.plazo, sistema: s.sistema, escala });
-    const comparacion = compararSistemas({ capital: s.monto, tasa: tasa.periodica, plazo: s.plazo, escala });
-    setResultado({ simulacion: s, tasa, tabla, comparacion });
+    const credito = { capital: s.monto, tasa: tasa.periodica, plazo: s.plazo, escala, gracia };
+    const base = generarTabla({ ...credito, sistema: s.sistema });
+    const comparacion = compararSistemas(credito);
+    setResultado({ simulacion: s, tasa, gracia, base, comparacion });
   };
+
+  const tabla =
+    resultado && abono
+      ? generarTabla({
+          capital: resultado.simulacion.monto,
+          tasa: resultado.tasa.periodica,
+          plazo: resultado.simulacion.plazo,
+          sistema: resultado.simulacion.sistema,
+          escala,
+          gracia: resultado.gracia,
+          abono,
+        })
+      : resultado?.base;
+  const hayExtra = tabla?.filas.some((fila) => !fila.extra.isZero()) ?? false;
+  const primeraCuota = tabla?.filas.find((fila) => fila.periodo > 0 && !fila.gracia)?.cuota;
 
   const periodoPago = nombreFrecuencia(f.frecuenciaPago).periodo;
 
@@ -263,6 +338,37 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
               ))}
             </select>
           </div>
+          <Campo
+            nombre="gracia"
+            etiqueta="Periodos de gracia"
+            inputMode="numeric"
+            placeholder="0"
+            valor={graciaTexto}
+            alCambiar={(v) => {
+              setGraciaTexto(v);
+              limpiarResultado();
+            }}
+            onBlur={() => {
+              const v = validarGracia(graciaTexto);
+              setErrorGracia(v.ok ? undefined : v.errores);
+            }}
+            error={errorGracia}
+            ayuda="Entre 0 y 60. Se suman a las cuotas."
+          />
+          <div className="campo">
+            <label htmlFor="tipoGracia">Tipo de gracia</label>
+            <select
+              id="tipoGracia"
+              value={tipoGracia}
+              onChange={(e) => {
+                setTipoGracia(e.target.value as TipoGracia);
+                limpiarResultado();
+              }}
+            >
+              <option value="muerta">Muerta (no se paga nada)</option>
+              <option value="intereses">Con pago de intereses</option>
+            </select>
+          </div>
           <fieldset className="opciones">
             <legend>Sistema de amortización</legend>
             <label>
@@ -333,7 +439,20 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
             </details>
           </section>
 
+          <TarjetaUsura eaCredito={resultado.tasa.ea} {...(hoy ? { hoy } : {})} />
+
+          {resultado.gracia.periodos > 0 && <ComparacionGracias r={resultado} escala={escala} />}
+
           <ComparacionSistemas comparacion={resultado.comparacion} escala={escala} />
+
+          <FormularioAbono
+            base={resultado.base}
+            gracia={resultado.gracia.periodos}
+            plazo={resultado.simulacion.plazo}
+            escala={escala}
+            abono={abono}
+            alCambiar={setAbono}
+          />
 
           <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-tabla">
             <h2 id="titulo-tabla">
@@ -342,15 +461,15 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
             <dl className="cifras">
               <div>
                 <dt>Primera cuota</dt>
-                <dd>{pesos(resultado.tabla.filas[1]?.cuota ?? resultado.tabla.totalPagado, escala)}</dd>
+                <dd>{pesos(primeraCuota!, escala)}</dd>
               </div>
               <div>
                 <dt>Total de intereses</dt>
-                <dd>{pesos(resultado.tabla.totalIntereses, escala)}</dd>
+                <dd>{pesos(tabla!.totalIntereses, escala)}</dd>
               </div>
               <div>
                 <dt>Total pagado</dt>
-                <dd>{pesos(resultado.tabla.totalPagado, escala)}</dd>
+                <dd>{pesos(tabla!.totalPagado, escala)}</dd>
               </div>
             </dl>
             <div className="tabla-contenedor" tabIndex={0} role="region" aria-label="Tabla de amortización">
@@ -364,16 +483,21 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
                     <th scope="col">Cuota</th>
                     <th scope="col">Interés</th>
                     <th scope="col">Abono a capital</th>
+                    {hayExtra && <th scope="col">Abono extra</th>}
                     <th scope="col">Saldo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {resultado.tabla.filas.map((fila) => (
-                    <tr key={fila.periodo}>
-                      <th scope="row">{fila.periodo}</th>
+                  {tabla!.filas.map((fila) => (
+                    <tr key={fila.periodo} className={fila.gracia ? 'fila-gracia' : undefined}>
+                      <th scope="row">
+                        {fila.periodo}
+                        {fila.gracia && <span className="etiqueta-fila"> gracia</span>}
+                      </th>
                       <td>{pesos(fila.cuota, escala)}</td>
                       <td>{pesos(fila.interes, escala)}</td>
                       <td>{pesos(fila.abono, escala)}</td>
+                      {hayExtra && <td>{pesos(fila.extra, escala)}</td>}
                       <td>{pesos(fila.saldo, escala)}</td>
                     </tr>
                   ))}

@@ -347,3 +347,60 @@ Prueba:
 
 1. Abrir el simulador y escribir 12.000.000, 12 cuotas, tasa 1, "Efectiva", periodo "Mensual". Pulsar "Simular".
 2. Pulsar "Comparar sistemas". Resultado esperado: Alemán con cuota inicial $ 1.120.000, intereses $ 780.000 y total $ 12.780.000; Francés con cuota $ 1.066.185 e intereses cercanos a $ 794.225; Δ ≈ 1,82 %. "Comparar sistemas" es un botón que muestra u oculta la comparación.
+
+## [HU-12 a HU-15] - Gracia, abono extraordinario y tasa de usura
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions. No requiere migraciones.
+
+**Historias:**
+- HU-12: periodos de gracia muerta.
+- HU-13: gracia con pago de intereses y su costo frente a la gracia muerta.
+- HU-14: abono extraordinario que reduce la cuota o el plazo.
+- HU-15: aviso si la tasa del crédito supera la usura vigente.
+
+### ¿Qué se hizo?
+
+- `src/core/amortizacion.ts`: `generarTabla` acepta `gracia` (`muerta` o `intereses`, de 0 a 60 periodos) y `abono` (periodo, valor y modo). Nueva función `cuotasRestantes` para la reducción de plazo. Cada fila marca si es de gracia y cuánto abono extra tuvo.
+- `src/core/comparar.ts`: `compararGracias` calcula los intereses con cada tipo de gracia y la diferencia.
+- `src/core/usura.ts`: IBC certificado de octubre de 2026 (19,06 % EA, consumo y ordinario), `vigenciaActual`, `evaluarUsura` (usura = 1,5 × IBC) y el margen en puntos básicos.
+- `src/core/simulador.ts`: `validarGracia`, `validarAbono` y `validarIbc`.
+- Simulador: campos "Periodos de gracia" y "Tipo de gracia"; tarjetas "Tasa de usura" y "Costo de la gracia"; formulario "Abono extraordinario" (`src/ui/paginas/Abono.tsx`, `Usura.tsx`); en la tabla las filas de gracia dicen "gracia" y aparece la columna "Abono extra" cuando hay abono.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Plazo y gracia:** el número de cuotas no incluye la gracia (supuesto de la sección 0 de la propuesta): con 3 de gracia y 12 cuotas, la tabla tiene 15 periodos.
+- **Gracia muerta:** $I_k=S_{k-1}\,i$ redondeado, cuota 0 y $S_k=S_{k-1}+I_k$. La cuota se calcula después sobre $S_g$. Ese interés capitalizado cuenta en el total de intereses, así que total pagado − total de intereses = capital.
+- **Gracia con pago de intereses:** cuota = $I_k$ y el saldo no cambia.
+- **Abono extraordinario:** se paga al final del periodo, después de la cuota. Debe estar en un periodo de amortización que no sea el último y no superar el saldo de ese periodo; si no, se muestra el error y la tabla no cambia.
+  - Reducir la cuota: Francés $R'=\frac{S'\,i}{1-(1+i)^{-(n-k)}}$, Alemán $A'=\frac{S'}{n-k}$.
+  - Reducir el plazo: Francés $n'=\left\lceil\frac{-\ln(1-S'\,i/R)}{\ln(1+i)}\right\rceil$ (con $i=0$, $\lceil S'/R\rceil$), Alemán $n'=\lceil S'/A\rceil$. La última cuota es parcial y el saldo cierra en 0.
+  - Si el abono es igual al saldo, el crédito termina en ese periodo.
+  - El total pagado suma cuotas y abonos extra (sección 7.1).
+- **Usura (sección 7.4):** se compara siempre en EA. Los datos están en `src/core/usura.ts` (sin llamadas a internet). Desde el 1 de noviembre de 2026 el dato de octubre queda vencido: la tarjeta lo avisa y deja escribir el IBC y su fecha.
+- **Cambios frente a la propuesta, para hacerlo más simple:** los datos de usura están en un archivo TypeScript y no en `data/usura.json`; no se creó el workflow mensual de recordatorio; el IBC escrito a mano queda solo en memoria (no se guarda en el perfil). Cada mes hay que agregar la nueva vigencia a `VIGENCIAS_IBC`.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/graciaAbono.test.ts`
+  - T6 y criterio HU-12: con 3 de gracia muerta los intereses son 150.000, 152.250 y 154.534, el saldo llega a 10.456.784 y la cuota es 958.678.
+  - `validarGracia`: vacío = 0, acepta 0-60, rechaza 61, decimales y texto.
+  - T7 y criterio HU-13: cuotas 1-3 de 150.000, saldo sin cambio y luego cuota 916.800; la gracia muerta cuesta más y se calcula la diferencia.
+  - T8 (Alemán, abono de 2.000.000 en el periodo 2): recálculo con A' = 800.000 y R₃ = 880.000; reducción de plazo con 10 cuotas en total.
+  - Francés con reducción de plazo y con recálculo de cuota, tasa 0, abono igual al saldo y la protección de `cuotasRestantes`.
+  - Propiedad (150 casos): con cualquier abono válido el saldo cierra en 0, Σ abonos = P y los intereses no suben.
+  - `validarAbono`: abono mayor que el saldo, periodo fuera de rango (con y sin gracia), abono en 0 y crédito de una cuota.
+- `tests/unit/usura.test.ts`: T12 (usura 28,59 %; 2,2 % mensual = 29,84 % EA la supera), un crédito dentro del límite, fechas de la vigencia, que las vigencias no se solapen y `validarIbc`.
+- `tests/unit/Simulador.test.tsx`: los criterios de HU-12 a HU-15 en pantalla, incluido el dato vencido con IBC a mano.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+Con 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual:
+
+1. Periodos de gracia 3, tipo "Muerta". Resultado esperado: filas 1-3 con cuota $ 0 y "gracia", saldo de $ 10.456.784 en el periodo 3 y cuota de $ 958.678.
+2. Cambiar a "Con pago de intereses". Resultado esperado: cuotas 1-3 de $ 150.000, saldo sin cambio y la tarjeta "Costo de la gracia" con la diferencia.
+3. Gracia 61. Resultado esperado: el mensaje del límite 0-60.
+4. Sin gracia, abono en el periodo 5 de 50.000.000. Resultado esperado: "El abono supera el saldo del periodo 5 (…)".
+5. Abono de 2.000.000 en el periodo 3 con "Reducir el plazo". Resultado esperado: la cuota sigue en $ 916.800, hay menos filas y el saldo final es $ 0.
+6. Tasa 2,2 efectiva mensual. Resultado esperado en "Tasa de usura": "⚠ Supera la usura (28,59 % EA)". Desde el 1 de noviembre aparece el aviso de dato vencido y los campos para escribir el IBC.

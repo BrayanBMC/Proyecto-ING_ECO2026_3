@@ -189,3 +189,126 @@ describe('HU-11: comparar sistemas', () => {
     );
   });
 });
+
+const OCTUBRE = new Date(2026, 9, 15);
+const NOVIEMBRE = new Date(2026, 10, 5);
+
+/** 10.000.000 al 1,5 % efectivo mensual en 12 cuotas (casos T3, T6 y T7). */
+function creditoBase(hoy = OCTUBRE) {
+  render(<PaginaSimulador hoy={hoy} />);
+  llenar();
+  elegir('Tipo de tasa', 'efectiva');
+  elegir('Periodo de la tasa', '12');
+}
+
+describe('HU-12 y HU-13: periodos de gracia', () => {
+  it('criterio HU-12: con g = 3 de gracia muerta las filas 1-3 tienen cuota 0 y el saldo crece (T6)', () => {
+    creditoBase();
+    escribir('Periodos de gracia', '3');
+    simular();
+    expect(texto(celda(1, 1))).toBe('$ 0');
+    expect(texto(celda(1, 0))).toBe('1 gracia');
+    expect(texto(celda(3, 4))).toBe('$ 10.456.784');
+    expect(texto(celda(4, 1))).toBe('$ 958.678');
+  });
+
+  it('criterio HU-12: con 61 periodos de gracia muestra el límite y no simula', () => {
+    creditoBase();
+    escribir('Periodos de gracia', '61');
+    simular();
+    expect(screen.getByText('Los periodos de gracia deben ser un número entero entre 0 y 60.')).toBeTruthy();
+    expect(screen.queryByRole('table', { name: /^Cuotas por/ })).toBeNull();
+  });
+
+  it('criterio HU-13: con pago de intereses las cuotas 1-3 son el interés y se ve la diferencia con la gracia muerta', () => {
+    creditoBase();
+    escribir('Periodos de gracia', '3');
+    elegir('Tipo de gracia', 'intereses');
+    simular();
+    expect(texto(celda(1, 1))).toBe('$ 150.000');
+    expect(texto(celda(3, 4))).toBe('$ 10.000.000');
+    const costo = screen.getByRole('heading', { name: 'Costo de la gracia (3 periodos)' }).closest('section')!;
+    expect(texto(within(costo).getByText('Diferencia').nextElementSibling)).toMatch(/^\$ [\d.]+$/);
+  });
+});
+
+describe('HU-14: abono extraordinario', () => {
+  it('criterio HU-14: un abono mayor que el saldo del periodo muestra el error y la tabla no cambia', () => {
+    creditoBase();
+    simular();
+    const filasAntes = within(tablaAmortizacion()).getAllByRole('row').length;
+    escribir('Periodo del abono', '5');
+    escribir('Valor del abono ($)', '50.000.000');
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar abono' }));
+    expect(texto(screen.getByText(/El abono supera el saldo del periodo 5/))).toMatch(
+      /^El abono supera el saldo del periodo 5 \(\$ [\d.]+\)\.$/,
+    );
+    expect(within(tablaAmortizacion()).getAllByRole('row')).toHaveLength(filasAntes);
+  });
+
+  it('criterio HU-14: con "reducir el plazo" la cuota se mantiene, hay menos filas y el saldo final es 0', () => {
+    creditoBase();
+    simular();
+    escribir('Periodo del abono', '3');
+    escribir('Valor del abono ($)', '2.000.000');
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar abono' }));
+
+    const filas = within(tablaAmortizacion()).getAllByRole('row');
+    expect(filas.length).toBeLessThan(14);
+    expect(texto(celda(4, 1))).toBe('$ 916.800');
+    expect(texto(filas.at(-1)!.querySelectorAll('td')[4] ?? null)).toBe('$ 0');
+    expect(screen.getByRole('columnheader', { name: 'Abono extra' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar abono' }));
+    expect(within(tablaAmortizacion()).getAllByRole('row')).toHaveLength(14);
+  });
+
+  it('con "reducir la cuota" se mantienen las 12 cuotas y la cuota baja', () => {
+    creditoBase();
+    simular();
+    escribir('Periodo del abono', '3');
+    escribir('Valor del abono ($)', '2.000.000');
+    fireEvent.click(screen.getByLabelText('Reducir la cuota (mismo plazo)'));
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar abono' }));
+    expect(within(tablaAmortizacion()).getAllByRole('row')).toHaveLength(14);
+    expect(texto(celda(4, 1))).not.toBe('$ 916.800');
+  });
+});
+
+describe('HU-15: tasa de usura', () => {
+  it('criterio HU-15: con IBC 19,06 % y 2,2 % mensual muestra "Supera la usura (28,59 % EA)" con ícono y texto', () => {
+    render(<PaginaSimulador hoy={OCTUBRE} />);
+    llenar({ tasa: '2,2' });
+    elegir('Tipo de tasa', 'efectiva');
+    elegir('Periodo de la tasa', '12');
+    simular();
+    const usura = screen.getByRole('heading', { name: 'Tasa de usura' }).closest('section')!;
+    expect(texto(usura)).toContain('⚠ Supera la usura (28,59 % EA)');
+    expect(texto(usura)).toContain('29,84 %');
+  });
+
+  it('un crédito al 1,5 % mensual queda dentro del límite', () => {
+    creditoBase();
+    simular();
+    const usura = screen.getByRole('heading', { name: 'Tasa de usura' }).closest('section')!;
+    expect(texto(usura)).toContain('✓ Dentro del límite de usura (28,59 % EA)');
+  });
+
+  it('criterio HU-15: con el dato vencido avisa y deja ingresar el IBC a mano con su fecha', () => {
+    creditoBase(NOVIEMBRE);
+    simular();
+    const usura = screen.getByRole('heading', { name: 'Tasa de usura' }).closest('section')!;
+    expect(texto(usura)).toContain('Dato de usura vencido (vigente hasta 31/10/2026)');
+    expect(within(usura).queryByText(/Supera la usura|Dentro del límite/)).toBeNull();
+
+    fireEvent.click(within(usura).getByRole('button', { name: 'Usar este IBC' }));
+    expect(within(usura).getByText('El IBC debe estar entre 0,01 % y 100 % EA.')).toBeTruthy();
+    expect(within(usura).getByText('Escribe la fecha de vigencia del IBC.')).toBeTruthy();
+
+    escribir('IBC efectivo anual (%)', '19,06');
+    escribir('Vigente hasta', '2026-11-30');
+    fireEvent.click(within(usura).getByRole('button', { name: 'Usar este IBC' }));
+    expect(texto(usura)).toContain('Dentro del límite de usura (28,59 % EA)');
+    expect(texto(usura)).toContain('Ingresado por el usuario, vigencia 30/11/2026');
+  });
+});
