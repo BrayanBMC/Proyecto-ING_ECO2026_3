@@ -179,7 +179,7 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
                   checked={formulario.escala === 2}
                   onChange={() => cambiar('escala', 2)}
                 />{' '}
-                2 decimales ($ 916.799,92)
+                2 decimales ($ 916.799,93)
               </label>
             </fieldset>
             <fieldset className="opciones">

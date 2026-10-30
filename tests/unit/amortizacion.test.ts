@@ -8,9 +8,10 @@ describe('core/amortizacion: Francés (HU-10)', () => {
     const t = generarTabla({ capital: dec(10_000_000), tasa: dec('0.015'), plazo: 12, sistema: 'frances', escala: 2 });
     const [f0, f1, f2] = t.filas;
     expect(s(f0!.saldo)).toBe('10000000');
-    expect(f1!.cuota.toFixed(2)).toBe('916799.92');
+    // R exacta = 916.799,93… (PAGO de Excel); con ROUND_HALF_UP a 2 decimales queda 916.799,93.
+    expect(f1!.cuota.toFixed(2)).toBe('916799.93');
     expect(f1!.interes.toFixed(2)).toBe('150000.00');
-    expect(f1!.abono.toFixed(2)).toBe('766799.92');
+    expect(f1!.abono.toFixed(2)).toBe('766799.93');
     expect(f2!.interes.toFixed(2)).toBe('138498.00');
     expect(t.filas.at(-1)!.saldo.isZero()).toBe(true);
     expect(t.totalIntereses.minus('1001599').abs().lte(1)).toBe(true);

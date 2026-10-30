@@ -293,7 +293,7 @@ Casos calculados a mano. Cada prueba fija la escala monetaria indicada. En Excel
 |---|---|---|---|
 | T1 | 24 % nominal mensual vencida → EA, y de vuelta a mensual | EA = 26,824179 %; ida y vuelta = 2,000000 % exacto a 30 dígitos | `=TASA.EFECTIVA(24%;12)` → 0,268241795 |
 | T2 | 30 % nominal trimestral anticipada → EA | $i_a$ = 7,5 %; $i_v$ = 8,108108 %; EA = 36,5945 % | `=(1-0,3/4)^-4-1` |
-| T3 | Francés: P = 10.000.000; i = 1,5 % mensual; n = 12; escala 2 | R = 916.799,92; $I_1$ = 150.000,00; $A_1$ = 766.799,92; $I_2$ = 138.498,00; $S_{12}$ = 0; $T_I$ ≈ 1.001.599 (±1 por el residuo) | `=PAGO(1,5%;12;-10000000)`; `=PAGOINT(1,5%;1;12;-10000000)`; `=PAGOPRIN(1,5%;1;12;-10000000)`; `=PAGOINT(1,5%;2;12;-10000000)` |
+| T3 | Francés: P = 10.000.000; i = 1,5 % mensual; n = 12; escala 2 | R = 916.799,93 (corregido en HU-10: el valor exacto es 916.799,93…); $I_1$ = 150.000,00; $A_1$ = 766.799,93; $I_2$ = 138.498,00; $S_{12}$ = 0; $T_I$ ≈ 1.001.599 (±1 por el residuo) | `=PAGO(1,5%;12;-10000000)`; `=PAGOINT(1,5%;1;12;-10000000)`; `=PAGOPRIN(1,5%;1;12;-10000000)`; `=PAGOINT(1,5%;2;12;-10000000)` |
 | T3b | T3 con escala 0 | R = 916.800 (filas 1-11); $R_{12}$ absorbe el residuo (cálculo a mano: ≈ 916.799; cota $\lvert R_{12}-916.800\rvert\le 6$); $S_{12}$ = 0; $\sum A_k$ = 10.000.000 | `=REDONDEAR(PAGO(...);0)` |
 | T4 | Alemán: P = 12.000.000; i = 1 %; n = 12 | A = 1.000.000; $R_1$ = 1.120.000; $R_{12}$ = 1.010.000; $T_I$ = 780.000 exacto ($P\,i\,\frac{n+1}{2}$) | Columna manual `=1000000+saldo*1%` |
 | T5 | Francés con i = 0: P = 1.200.000; n = 12 | R = 100.000; $T_I$ = 0; no lanza error | `=PAGO(0;12;-1200000)` |

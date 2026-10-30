@@ -296,7 +296,7 @@ Prueba:
 ### Pruebas unitarias implementadas
 
 - `tests/unit/tasas.test.ts`: T1 (24 % NMV → EA 26,824179 %, ida y vuelta exacta a 30 dígitos), T2 (30 % NTA: i_a 7,5 %, i_v 8,108108 %, EA 36,5945 %), ida y vuelta anticipada ↔ vencida, EA → nominal, misma frecuencia, criterios de HU-08 y HU-09 con los pasos, y la propiedad nominal → EA → periódica = j/m con tolerancia 1e-30 (300 casos).
-- `tests/unit/amortizacion.test.ts`: T3 (escala 2: R 916.799,92, I₁ 150.000,00, A₁ 766.799,92, I₂ 138.498,00, T_I ≈ 1.001.599), T3b (escala 0: cuota 916.800, residuo ≤ 6, Σ abonos = P), T4 (Alemán: abono 1.000.000, R₁ 1.120.000, R₁₂ 1.010.000, T_I 780.000), T5 (i = 0), montos pequeños sin saldo negativo, y la propiedad Σ abonos = P, saldo final 0, saldos ≥ 0 y no crecientes (200 casos con P hasta 10¹², n hasta 360).
+- `tests/unit/amortizacion.test.ts`: T3 (escala 2: R 916.799,93, I₁ 150.000,00, A₁ 766.799,93, I₂ 138.498,00, T_I ≈ 1.001.599), T3b (escala 0: cuota 916.800, residuo ≤ 6, Σ abonos = P), T4 (Alemán: abono 1.000.000, R₁ 1.120.000, R₁₂ 1.010.000, T_I 780.000), T5 (i = 0), montos pequeños sin saldo negativo, y la propiedad Σ abonos = P, saldo final 0, saldos ≥ 0 y no crecientes (200 casos con P hasta 10¹², n hasta 360).
 - `tests/unit/simulador.test.ts`: rangos de monto, plazo y tasa; criterios de HU-07, HU-08 y HU-09.
 - `tests/unit/Simulador.test.tsx`: los criterios de HU-07 a HU-10 en pantalla, la escala de 2 decimales, la escala del perfil y la entrada del invitado desde el inicio.
 
@@ -308,3 +308,10 @@ Prueba:
 4. Cambiar a tasa 1,5, "Efectiva", periodo "Mensual" y simular. Resultado esperado: fila 0 con saldo $ 10.000.000, cuota $ 916.800 y saldo final $ 0.
 5. Elegir "Alemán" con monto 12.000.000 y tasa 1 efectiva mensual. Resultado esperado: abono $ 1.000.000 en todas las filas y cuota de $ 1.120.000 a $ 1.010.000.
 6. Tasa 30, "Nominal anticipada", capitalización "Trimestral". Resultado esperado: EA 36,5945 % y, en "¿Cómo se calculó?", el paso i_v = i_a / (1 − i_a).
+
+### Corrección del caso T3 de la propuesta (30 de octubre de 2026)
+
+- **Problema:** dos pruebas esperaban la cuota 916.799,92 (caso T3 de la sección 7.3 de la propuesta) y el motor dio 916.799,93.
+- **Causa:** el valor de la propuesta estaba mal calculado a mano. La cuota exacta $R=\frac{10.000.000\cdot 0{,}015}{1-1{,}015^{-12}}$ es 916.799,93…, y con `ROUND_HALF_UP` a 2 decimales queda 916.799,93. El motor estaba bien.
+- **Cambio:** se corrigieron T3 en la propuesta, las dos pruebas y el ejemplo de "2 decimales" en el perfil. $A_1$ pasa a 766.799,93; $I_2$ sigue en 138.498,00.
+- **Otros ajustes del mismo arreglo:** las pruebas de propiedades tienen un tiempo de espera de 60 s, y en GitHub Actions las pruebas que fallan salen como anotaciones (`reporters: ['default', 'github-actions']`).

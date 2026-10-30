@@ -130,14 +130,14 @@ describe('HU-10: tabla de amortización', () => {
     expect(texto(celda(12, 1))).toBe('$ 1.010.000');
   });
 
-  it('con 2 decimales muestra la cuota de Excel 916.799,92', () => {
+  it('con 2 decimales muestra la cuota de Excel 916.799,93', () => {
     render(<PaginaSimulador />);
     llenar();
     elegir('Tipo de tasa', 'efectiva');
     elegir('Periodo de la tasa', '12');
     fireEvent.click(screen.getByLabelText('2 decimales'));
     simular();
-    expect(texto(celda(1, 1))).toBe('$ 916.799,92');
+    expect(texto(celda(1, 1))).toBe('$ 916.799,93');
   });
 
   it('HU-04: con sesión usa la escala del perfil', async () => {
