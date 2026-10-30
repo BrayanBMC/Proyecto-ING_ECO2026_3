@@ -312,3 +312,44 @@ describe('HU-15: tasa de usura', () => {
     expect(texto(usura)).toContain('Ingresado por el usuario, vigencia 30/11/2026');
   });
 });
+
+describe('HU-16: ¿Cómo se calculó?', () => {
+  it('criterio HU-16: muestra la fórmula de la cuota con los valores sustituidos y el resultado', () => {
+    creditoBase();
+    simular();
+    const tabla = screen.getByRole('heading', { name: /^Tabla de amortización/ }).closest('section')!;
+    fireEvent.click(within(tabla).getByText('¿Cómo se calculó la cuota?'));
+    const pasos = within(tabla).getAllByRole('listitem', { hidden: true });
+    expect(texto(pasos[0]!)).toContain('R = P · i / (1 − (1 + i)^−n)');
+    expect(texto(pasos[0]!)).toContain('= $ 10.000.000 · 0,015 / (1 − (1 + 0,015)^−12)');
+    expect(texto(pasos[0]!)).toContain('= $ 916.800');
+  });
+
+  it('criterio HU-16: cada paso es enfocable con el teclado y su texto lo lee el lector de pantalla', () => {
+    creditoBase();
+    simular();
+    const pasos = screen.getAllByRole('listitem', { hidden: true });
+    expect(pasos.length).toBeGreaterThan(4);
+    for (const paso of pasos) {
+      expect(paso.getAttribute('tabindex')).toBe('0');
+      expect(paso.textContent!.length).toBeGreaterThan(0);
+    }
+    pasos[0]!.focus();
+    expect(document.activeElement).toBe(pasos[0]);
+  });
+
+  it('los pasos de la tasa muestran los valores sustituidos', () => {
+    render(<PaginaSimulador hoy={OCTUBRE} />);
+    llenar({ tasa: '24' });
+    simular();
+    const tasa = screen.getByRole('heading', { name: 'Tasa que se aplica' }).closest('section')!;
+    expect(texto(tasa)).toContain('= (1 + 0,02)^12 − 1');
+  });
+
+  it('la usura muestra 1,5 · IBC con su valor', () => {
+    creditoBase();
+    simular();
+    const usura = screen.getByRole('heading', { name: 'Tasa de usura' }).closest('section')!;
+    expect(texto(usura)).toContain('= 1,5 · 19,06 %');
+  });
+});

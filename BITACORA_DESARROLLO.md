@@ -404,3 +404,35 @@ Con 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual:
 4. Sin gracia, abono en el periodo 5 de 50.000.000. Resultado esperado: "El abono supera el saldo del periodo 5 (…)".
 5. Abono de 2.000.000 en el periodo 3 con "Reducir el plazo". Resultado esperado: la cuota sigue en $ 916.800, hay menos filas y el saldo final es $ 0.
 6. Tasa 2,2 efectiva mensual. Resultado esperado en "Tasa de usura": "⚠ Supera la usura (28,59 % EA)". Desde el 1 de noviembre aparece el aviso de dato vencido y los campos para escribir el IBC.
+
+## [HU-16] - "¿Cómo se calculó?" paso a paso
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions. No requiere migraciones.
+
+**Historia:** Como estudiante quiero ver paso a paso la fórmula de cada resultado con mis valores para entenderlo y preparar exámenes.
+
+### ¿Qué se hizo?
+
+- `src/core/explicacion.ts`: `explicarAmortizacion` arma los pasos de la cuota y del primer periodo de pago: saldo al terminar la gracia (si hay), cuota fija (Francés) o abono fijo (Alemán), interés, abono o cuota, y saldo. Cada paso trae título, fórmula, fórmula con los valores del usuario y resultado.
+- `src/core/tasas.ts`: cada paso de la tasa trae ahora `sustitucion` (por ejemplo "(1 + 0,02)^12 − 1"), y `numero` formatea decimales en es-CO.
+- `src/ui/Pasos.tsx`: panel desplegable reutilizable. Se usa en "Tasa que se aplica", en la tabla ("¿Cómo se calculó la cuota?") y en "Tasa de usura" (usura = 1,5 · IBC y la comparación en puntos básicos).
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- Los valores sustituidos salen de la misma tabla que se ve en pantalla, así que los resultados del panel coinciden con las filas.
+- **Accesibilidad (criterio HU-16):** el panel es un `<details>` que se abre con Enter o Espacio; cada paso es un `<li tabIndex={0}>` con texto real, así que se recorre con Tab y el lector de pantalla lo lee completo.
+- **Cambio frente a la propuesta:** la HU pedía las fórmulas en LaTeX. Para no agregar una librería (KaTeX pesa unos 280 kB más sus fuentes), las fórmulas se escriben con notación matemática en texto (·, −, subíndices ₀₁₂, ^). Se leen bien en pantalla, en lector de pantalla y al copiarlas.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/explicacion.test.ts`: Francés T3b con todos los pasos exactos; Alemán T4; gracia muerta T6 (S₃ = P · (1 + i)^3 = 10.456.784 y cuota 958.678 sobre S₃); gracia de intereses; tasa 0; abono extra en el saldo; subíndices de dos dígitos; sustituciones de tasas nominal vencida, anticipada y efectiva; `numero`.
+- `tests/unit/Simulador.test.tsx`: criterio HU-16 en pantalla (fórmula, valores y resultado de la cuota), cada paso enfocable con `tabindex="0"`, pasos de la tasa y de la usura.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+1. Simular 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual.
+2. Abrir "¿Cómo se calculó la cuota?". Resultado esperado: "R = P · i / (1 − (1 + i)^−n)", "= $ 10.000.000 · 0,015 / (1 − (1 + 0,015)^−12)" y "= $ 916.800", seguido del interés, el abono y el saldo del periodo 1.
+3. Pulsar Tab varias veces. Resultado esperado: el foco pasa por cada paso con un borde visible.
+4. Abrir "¿Cómo se calculó?" en "Tasa que se aplica" y en "Tasa de usura". Resultado esperado: cada fórmula con los valores del crédito.
