@@ -55,8 +55,7 @@ export function App() {
 
       <footer className="pie">
         <p>
-          {NOMBRE_APP} es un proyecto académico de Ingeniería Económica. No es asesoría financiera ni está asociado con
-          ninguna entidad financiera.
+          Proyecto académico de Ingeniería Económica.
         </p>
       </footer>
     </>

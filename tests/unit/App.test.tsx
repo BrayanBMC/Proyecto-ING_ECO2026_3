@@ -2,11 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { App, NOMBRE_APP } from '../../src/ui/App';
 
 describe('ui/App: página inicial', () => {
-  it('muestra el nombre de la aplicación en la cabecera y en el pie', () => {
+  it('muestra el nombre de la aplicación en la cabecera', () => {
     render(<App />);
     expect(NOMBRE_APP).toBe('Amortiza');
-    expect(screen.getByText(NOMBRE_APP)).toBeTruthy();
-    expect(screen.getByRole('contentinfo').textContent).toContain(NOMBRE_APP);
+    expect(screen.getByRole('banner').textContent).toContain(NOMBRE_APP);
+  });
+
+  it('el pie solo indica que es un proyecto académico', () => {
+    render(<App />);
+    expect(screen.getByRole('contentinfo').textContent?.trim()).toBe('Proyecto académico de Ingeniería Económica.');
   });
 
   it('muestra el título principal y los cuatro módulos del spec', () => {
