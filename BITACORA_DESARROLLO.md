@@ -327,7 +327,7 @@ Prueba:
 ### ¿Qué se hizo?
 
 - `src/core/comparar.ts`: `compararSistemas` genera las dos tablas con el mismo monto, tasa y plazo, y devuelve cuota inicial, total de intereses, total pagado y el sobrecosto relativo Δ.
-- `src/ui/paginas/Simulador.tsx`: después de simular aparece la tarjeta desplegable "Comparar sistemas" con una tabla Francés frente a Alemán, el Δ y una explicación corta.
+- `src/ui/paginas/Simulador.tsx`: después de simular aparece el botón "Comparar sistemas", que abre una tabla Francés frente a Alemán, el Δ y una explicación corta.
 
 ### ¿Cómo se hizo? (Explicación técnica)
 
@@ -338,7 +338,7 @@ Prueba:
 ### Pruebas unitarias implementadas
 
 - `tests/unit/comparar.test.ts`
-  - Test: criterio HU-11 con T4 (12.000.000 al 1 % en 12 cuotas). Alemán: cuota inicial 1.120.000, intereses 780.000, total 12.780.000. Francés: cuota 1.066.186 (`PAGO(1%;12;-12000000)` = 1.066.185,87), intereses ≈ 794.230 y Δ = 1,82 %.
+  - Test: criterio HU-11 con T4 (12.000.000 al 1 % en 12 cuotas). Alemán: cuota inicial 1.120.000, intereses 780.000, total 12.780.000. Francés: cuota 1.066.185 (`PAGO(1%;12;-12000000)` = 1.066.185,44), intereses ≈ 794.225 y Δ = 1,82 %.
   - Test: criterio HU-11 con i = 0: ambos intereses en 0 y Δ "no aplica".
 - `tests/unit/Simulador.test.tsx`
   - Test: criterio HU-11 en pantalla: "Comparar sistemas" muestra cuota inicial, intereses y total pagado de ambos y el texto del Δ.
@@ -346,4 +346,4 @@ Prueba:
 ### ¿Cómo probar esta funcionalidad manualmente?
 
 1. Abrir el simulador y escribir 12.000.000, 12 cuotas, tasa 1, "Efectiva", periodo "Mensual". Pulsar "Simular".
-2. Abrir "Comparar sistemas". Resultado esperado: Alemán con cuota inicial $ 1.120.000, intereses $ 780.000 y total $ 12.780.000; Francés con cuota $ 1.066.186 e intereses cercanos a $ 794.230; Δ ≈ 1,82 %.
+2. Pulsar "Comparar sistemas". Resultado esperado: Alemán con cuota inicial $ 1.120.000, intereses $ 780.000 y total $ 12.780.000; Francés con cuota $ 1.066.185 e intereses cercanos a $ 794.225; Δ ≈ 1,82 %. "Comparar sistemas" es un botón que muestra u oculta la comparación.

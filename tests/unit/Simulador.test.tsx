@@ -175,14 +175,15 @@ describe('HU-11: comparar sistemas', () => {
     elegir('Periodo de la tasa', '12');
     simular();
 
-    fireEvent.click(screen.getByText('Comparar sistemas'));
+    expect(screen.queryByRole('table', { name: 'Francés frente a Alemán' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Comparar sistemas' }));
 
     // Alemán (T4): cuota inicial 1.120.000, intereses 780.000, total 12.780.000.
     expect(texto(comparada('Cuota inicial', 2))).toBe('$ 1.120.000');
     expect(texto(comparada('Total de intereses', 2))).toBe('$ 780.000');
     expect(texto(comparada('Total pagado', 2))).toBe('$ 12.780.000');
-    // Francés: cuota fija 1.066.186 (PAGO(1%;12;-12000000) = 1.066.185,87).
-    expect(texto(comparada('Cuota inicial', 1))).toBe('$ 1.066.186');
+    // Francés: cuota fija 1.066.185 (PAGO(1%;12;-12000000) = 1.066.185,44).
+    expect(texto(comparada('Cuota inicial', 1))).toBe('$ 1.066.185');
     expect(texto(screen.getByText(/Sobrecosto del Francés/).closest('p'))).toMatch(
       /Sobrecosto del Francés \(Δ\): \d+,\d{2} % más de intereses que el Alemán/,
     );

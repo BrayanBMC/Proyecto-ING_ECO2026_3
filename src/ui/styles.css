@@ -364,11 +364,6 @@ summary {
   cursor: pointer;
 }
 
-.resumen-titulo {
-  display: inline;
-  font-size: var(--t-lg);
-}
-
 .comparar-delta {
   margin: 1rem 0 0.5rem;
 }

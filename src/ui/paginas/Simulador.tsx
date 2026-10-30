@@ -59,14 +59,19 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
     { nombre: 'Total de intereses', f: frances.totalIntereses, a: aleman.totalIntereses },
     { nombre: 'Total pagado', f: frances.totalPagado, a: aleman.totalPagado },
   ];
+  const [abierto, setAbierto] = useState(false);
   return (
-    <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-comparar">
-      <details>
-        <summary>
-          <h2 id="titulo-comparar" className="resumen-titulo">
-            Comparar sistemas
-          </h2>
-        </summary>
+    <section className="tarjeta tarjeta--ancha" aria-label="Comparación de sistemas">
+      <button
+        type="button"
+        className="boton boton--secundario"
+        aria-expanded={abierto}
+        onClick={() => setAbierto((a) => !a)}
+      >
+        {abierto ? 'Ocultar comparación' : 'Comparar sistemas'}
+      </button>
+      {abierto && (
+        <>
         <div className="tabla-contenedor">
           <table className="tabla">
             <caption className="sr-solo">Francés frente a Alemán</caption>
@@ -100,7 +105,8 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
           El Alemán abona más capital al comienzo, así que el saldo baja más rápido y se pagan menos intereses. El
           Francés tiene una cuota fija y más baja al inicio.
         </p>
-      </details>
+        </>
+      )}
     </section>
   );
 }

@@ -6,9 +6,10 @@ describe('core/comparar (HU-11)', () => {
     expect(c.aleman.cuotaInicial.toString()).toBe('1120000');
     expect(c.aleman.totalIntereses.toString()).toBe('780000');
     expect(c.aleman.totalPagado.toString()).toBe('12780000');
-    expect(c.frances.cuotaInicial.toString()).toBe('1066186');
-    // Francés: ≈ 12 × 1.066.185,87 − 12.000.000 = 794.230 (±6 por el redondeo de cada fila).
-    expect(c.frances.totalIntereses.minus(794230).abs().lte(6)).toBe(true);
+    // PAGO(1%;12;-12000000) = 1.066.185,44 → 1.066.185 sin decimales.
+    expect(c.frances.cuotaInicial.toString()).toBe('1066185');
+    // Francés: ≈ 12 × 1.066.185,44 − 12.000.000 = 794.225 (±6 por el redondeo de cada fila).
+    expect(c.frances.totalIntereses.minus(794225).abs().lte(6)).toBe(true);
     expect(c.frances.totalPagado.minus(c.frances.totalIntereses).toString()).toBe('12000000');
     // Δ = (794.230 − 780.000) / 780.000 ≈ 1,82 %
     expect(c.sobrecosto!.times(100).toFixed(2)).toBe('1.82');
