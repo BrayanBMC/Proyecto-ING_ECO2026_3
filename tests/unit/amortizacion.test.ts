@@ -87,5 +87,5 @@ describe('core/amortizacion: propiedades (sección 7.3)', () => {
       }),
       { numRuns: 200 },
     );
-  });
+  }, 60_000); // tablas de hasta 360 filas con cobertura activa: más que los 5 s por defecto
 });

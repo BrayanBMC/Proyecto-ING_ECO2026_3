@@ -37,6 +37,8 @@ describe('core/simulador: validación (HU-07, HU-08, HU-09)', () => {
     expect(validarPlazo('12,5')).not.toBeNull();
     expect(validarPlazo('')).not.toBeNull();
     expect(validarPlazo('360')).toBeNull();
+    expect(validarPlazo('0')).not.toBeNull();
+    expect(validarPlazo('abc')).not.toBeNull();
     expect(validarMonto('1')).toBeNull();
   });
 

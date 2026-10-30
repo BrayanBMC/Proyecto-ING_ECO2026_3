@@ -58,7 +58,7 @@ describe('core/tasas (HU-08, HU-09)', () => {
       }),
       { numRuns: 300 },
     );
-  });
+  }, 60_000);
 });
 
 describe('core/tasas: calcularTasa', () => {
