@@ -1,3 +1,5 @@
+import type { Perfil } from '../../core';
+
 /**
  * Puerto de cuentas de usuario. La UI solo conoce esta interfaz; la implementación real
  * (Neon Managed Better Auth) vive en neonCuenta.ts y se puede cambiar sin tocar la UI.
@@ -42,4 +44,16 @@ export interface ServicioCuenta {
   pedirCodigoRecuperacion(correo: string): Promise<ResultadoCuenta>;
   /** HU-03: cambia la contraseña con el código recibido. */
   restablecerContrasena(datos: { correo: string; codigo: string; contrasena: string }): Promise<ResultadoCuenta>;
+
+  /** HU-04: perfil guardado del usuario, o null si aún no lo ha guardado. */
+  leerPerfil(): Promise<{ ok: true; perfil: Perfil | null } | { ok: false; mensaje: string }>;
+  /** HU-04: guarda el perfil (y actualiza el nombre de la cuenta). */
+  guardarPerfil(perfil: Perfil): Promise<ResultadoCuenta>;
+
+  /** HU-05: consentimientos guardados del usuario (para "Descargar mis datos"). */
+  leerConsentimientos(): Promise<
+    { ok: true; consentimientos: { version: string; aceptadoEn: string }[] } | { ok: false; mensaje: string }
+  >;
+  /** HU-05: comprueba la contraseña y borra la cuenta con todos sus datos. Deja la sesión cerrada. */
+  eliminarCuenta(correo: string, contrasena: string): Promise<ResultadoCuenta>;
 }

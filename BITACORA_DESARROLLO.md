@@ -207,3 +207,56 @@ Para las pruebas locales: `npm run coverage`.
 5. En "Iniciar sesión", pulsar "¿Olvidaste tu contraseña?", escribir tu correo y "Enviar código". Llega un código al correo.
 6. Escribir un código inventado y una contraseña nueva. Resultado esperado: un error y el botón "Enviar otro código".
 7. Escribir el código real y la contraseña nueva dos veces. Resultado esperado: "Contraseña actualizada". Entrar con la nueva contraseña.
+
+## [HU-04, HU-05 y HU-06] - Perfil, derechos del titular y modo invitado
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions. Requiere correr la migración `002` (ver "Cómo probar").
+
+**Historias:**
+- HU-04: como usuario registrado quiero un perfil con nombre, institución, programa y preferencias para personalizar mis reportes y la app.
+- HU-05: como titular de datos quiero descargar mis datos y eliminar mi cuenta para ejercer mis derechos de acceso y supresión.
+- HU-06: como visitante quiero usar la app sin registrarme para calcular y descargar reportes sin dar mis datos.
+
+### ¿Qué se hizo?
+
+- `db/migrations/002_perfil_y_eliminar_cuenta.sql`: tabla `perfil` (nombre, institución, programa, escala 0 o 2, base 360 o 365) con RLS, y función `eliminar_mi_cuenta()`.
+- `src/core/perfil.ts`: `validarPerfil`, `perfilInicial` y `armarExportacion` (el JSON de "Descargar mis datos").
+- `src/ui/paginas/Perfil.tsx` (`/perfil`): formulario del perfil, botón "Descargar mis datos" y "Eliminar mi cuenta" con contraseña.
+- `/cuenta-eliminada`: confirma el borrado. La cabecera con sesión tiene el botón "Mi perfil".
+- `src/ui/descargar.ts`: genera el archivo en el navegador con `Blob`; no pasa por ningún servidor.
+- `ServicioCuenta` y `neonCuenta.ts`: `leerPerfil`, `guardarPerfil`, `leerConsentimientos` y `eliminarCuenta`.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Perfil:** `upsert` en la tabla `perfil` por la Data API. RLS deja leer y escribir solo la fila cuyo `usuario_id` es el del JWT. Al guardar también se llama `auth.updateUser({ name })`, para que la cabecera muestre el nombre nuevo.
+- **Preferencias en otro equipo (criterio HU-04):** la escala y la base viven en la base de datos, no en el navegador, así que al iniciar sesión en otro equipo se cargan solas. Las usarán las calculadoras desde HU-07.
+- **Encabezado del PDF (criterio HU-04):** el perfil ya guarda nombre e institución; el PDF que los muestra llega con HU-17.
+- **Eliminar la cuenta:** se comprueba la contraseña iniciando sesión otra vez (`signIn.email`). Luego se llama la función SQL `eliminar_mi_cuenta()` con `SECURITY DEFINER`, que borra de `neon_auth."user"` solo la fila del JWT (`auth.user_id()`). El perfil y los consentimientos se borran en cascada (`ON DELETE CASCADE`). Es el plan B que ya traía la propuesta, porque no se pudo confirmar que Managed Better Auth permita `deleteUser` desde el cliente.
+- **Descargar mis datos:** JSON con cuenta, perfil, consentimientos y listas vacías de simulaciones y escenarios (se llenan desde HU-21).
+- **Modo invitado (HU-06):** se revisó el SDK de Neon y no usa `localStorage`, `sessionStorage` ni IndexedDB. La app tampoco. El invitado no ve ningún bloqueo; las calculadoras (desde HU-07) no piden cuenta.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/perfil.test.ts`: valores por defecto, recorte de textos y opcionales vacíos como `null`, límites de 60 y 80 caracteres, escalas y bases inválidas, y el contenido exacto del JSON de exportación.
+- `tests/unit/Perfil.test.tsx`
+  - HU-04: el formulario empieza con el nombre de la cuenta; la preferencia guardada (2 decimales, base 365) se carga sola; guarda todos los campos; no guarda con nombre vacío; muestra errores al leer o guardar; el invitado ve "Iniciar sesión"; la cabecera enlaza "Mi perfil".
+  - HU-05: "Descargar mis datos" entrega el JSON con cuenta, perfil y consentimientos; si falla la lectura no descarga; "Eliminar mi cuenta" exige contraseña, llama al servicio y lleva a `/cuenta-eliminada`; con contraseña incorrecta no elimina.
+  - HU-06: el invitado usa la app sin que se le pida cuenta; navegar como invitado deja vacíos `localStorage`, `sessionStorage` y las cookies.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+Una sola vez, después de fusionar el PR en `main`:
+
+1. GitHub → Actions → "Migraciones de base de datos" → Run workflow.
+2. Neon → Data API → "Refresh schema cache".
+
+Prueba:
+
+1. Iniciar sesión y pulsar "Mi perfil". Escribir institución y programa, elegir "2 decimales" y "365", y pulsar "Guardar perfil". Resultado esperado: "Perfil guardado."
+2. Cerrar sesión y entrar desde otro navegador o en incógnito. Abrir "Mi perfil". Resultado esperado: aparecen los mismos datos y preferencias.
+3. Pulsar "Descargar mis datos". Resultado esperado: se descarga `amortiza-mis-datos-AAAA-MM-DD.json` con correo, perfil y consentimientos.
+4. En "Eliminar mi cuenta", escribir una contraseña equivocada. Resultado esperado: "Correo o contraseña incorrectos."
+5. Escribir la contraseña correcta y pulsar "Eliminar mi cuenta". Resultado esperado: "Tu cuenta fue eliminada" y la cabecera vuelve a "Invitado". Intentar iniciar sesión con esa cuenta: "Correo o contraseña incorrectos."
+6. Como invitado, abrir las herramientas del navegador (F12) → Application: `localStorage`, `sessionStorage`, IndexedDB y cookies del sitio están vacíos.

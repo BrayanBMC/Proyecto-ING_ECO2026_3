@@ -276,6 +276,47 @@ a {
   gap: 0.75rem;
 }
 
+.pila {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.opciones {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.opciones legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.opciones label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 32px;
+}
+
+.zona-peligro {
+  border-top: 1px solid var(--borde);
+  padding-top: 1rem;
+}
+
+.zona-peligro h3 {
+  font-size: var(--t-md);
+}
+
+.boton--peligro {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--sobre-acento);
+}
+
 .mono {
   font-family: var(--fuente-mono);
 }

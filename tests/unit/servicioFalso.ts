@@ -14,6 +14,13 @@ export function servicioFalso(cambios: Partial<ServicioCuenta> = {}) {
     cerrarSesion: vi.fn(async () => OK),
     pedirCodigoRecuperacion: vi.fn(async () => OK),
     restablecerContrasena: vi.fn(async () => OK),
+    leerPerfil: vi.fn(async () => ({ ok: true as const, perfil: null })),
+    guardarPerfil: vi.fn(async () => OK),
+    leerConsentimientos: vi.fn(async () => ({
+      ok: true as const,
+      consentimientos: [{ version: '2026-10-30', aceptadoEn: '2026-10-30T15:00:00Z' }],
+    })),
+    eliminarCuenta: vi.fn(async () => OK),
     ...cambios,
   } satisfies ServicioCuenta;
 }

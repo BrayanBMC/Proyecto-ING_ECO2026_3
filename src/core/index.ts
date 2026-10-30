@@ -16,6 +16,8 @@ export {
   validarRestablecimiento,
   validarCorreo,
 } from './cuenta';
+export { LONGITUD_MAXIMA_INSTITUCION, perfilInicial, esquemaPerfil, validarPerfil, armarExportacion } from './perfil';
+export type { Perfil, FormularioPerfil, ErroresPerfil } from './perfil';
 export type {
   DatosRegistro,
   RegistroValido,

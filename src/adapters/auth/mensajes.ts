@@ -21,6 +21,7 @@ const MENSAJES: Record<string, string> = {
   EMAIL_NOT_VERIFIED: 'Tu correo aún no está verificado. Escribe el código que te enviamos al crear la cuenta.',
   INVALID_OTP: 'El código no es correcto. Revísalo o pide uno nuevo.',
   OTP_EXPIRED: 'El código venció. Pide uno nuevo.',
+  SIN_SESION: 'Tu sesión terminó. Inicia sesión de nuevo.',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
 };
 

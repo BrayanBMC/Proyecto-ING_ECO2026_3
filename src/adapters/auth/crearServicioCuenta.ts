@@ -23,5 +23,9 @@ export function crearServicioCuenta(urlAuth: string | undefined, urlDataApi: str
     cerrarSesion: async () => (await obtener()).cerrarSesion(),
     pedirCodigoRecuperacion: async (correo) => (await obtener()).pedirCodigoRecuperacion(correo),
     restablecerContrasena: async (datos) => (await obtener()).restablecerContrasena(datos),
+    leerPerfil: async () => (await obtener()).leerPerfil(),
+    guardarPerfil: async (perfil) => (await obtener()).guardarPerfil(perfil),
+    leerConsentimientos: async () => (await obtener()).leerConsentimientos(),
+    eliminarCuenta: async (correo, contrasena) => (await obtener()).eliminarCuenta(correo, contrasena),
   };
 }

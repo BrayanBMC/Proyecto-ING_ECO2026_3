@@ -3,6 +3,7 @@ import type { ServicioCuenta, Usuario } from '../adapters/auth/ServicioCuenta';
 import { Enlace, navegar, useRuta } from './navegacion';
 import { PaginaIniciarSesion } from './paginas/IniciarSesion';
 import { PaginaInicio } from './paginas/Inicio';
+import { PaginaPerfil } from './paginas/Perfil';
 import { PaginaPolitica } from './paginas/PoliticaDatos';
 import { PaginaRecuperar } from './paginas/RecuperarContrasena';
 import { PaginaRegistro } from './paginas/Registro';
@@ -17,10 +18,11 @@ interface Props {
 interface PropsPagina {
   ruta: string;
   servicioCuenta: ServicioCuenta | null;
+  usuario: Usuario | null;
   alCambiarSesion: () => Promise<void>;
 }
 
-function Pagina({ ruta, servicioCuenta, alCambiarSesion }: PropsPagina) {
+function Pagina({ ruta, servicioCuenta, usuario, alCambiarSesion }: PropsPagina) {
   switch (ruta.replace(/\/+$/, '') || '/') {
     case '/':
       return <PaginaInicio />;
@@ -30,6 +32,18 @@ function Pagina({ ruta, servicioCuenta, alCambiarSesion }: PropsPagina) {
       return <PaginaIniciarSesion servicio={servicioCuenta} alCambiarSesion={alCambiarSesion} />;
     case '/recuperar-contrasena':
       return <PaginaRecuperar servicio={servicioCuenta} />;
+    case '/perfil':
+      return <PaginaPerfil servicio={servicioCuenta} usuario={usuario} alCambiarSesion={alCambiarSesion} />;
+    case '/cuenta-eliminada':
+      return (
+        <section className="tarjeta" aria-labelledby="titulo-eliminada">
+          <h1 id="titulo-eliminada">Tu cuenta fue eliminada</h1>
+          <p>Borramos tu cuenta, tu perfil y tus consentimientos. Puedes seguir usando Amortiza como invitado.</p>
+          <Enlace className="boton" href="/">
+            Ir al inicio
+          </Enlace>
+        </section>
+      );
     case '/politica-de-datos':
       return <PaginaPolitica />;
     default:
@@ -78,6 +92,9 @@ export function App({ servicioCuenta = null }: Props) {
           {usuario ? (
             <>
               <span className="etiqueta-modo">Hola, {usuario.nombre}</span>
+              <Enlace className="boton boton--pequeno boton--secundario" href="/perfil">
+                Mi perfil
+              </Enlace>
               <button type="button" className="boton boton--pequeno boton--secundario" onClick={cerrarSesion}>
                 Cerrar sesión
               </button>
@@ -103,7 +120,7 @@ export function App({ servicioCuenta = null }: Props) {
       </header>
 
       <main id="contenido" className="contenido" tabIndex={-1}>
-        <Pagina ruta={ruta} servicioCuenta={servicioCuenta} alCambiarSesion={actualizarSesion} />
+        <Pagina ruta={ruta} servicioCuenta={servicioCuenta} usuario={usuario} alCambiarSesion={actualizarSesion} />
       </main>
 
       <footer className="pie">
