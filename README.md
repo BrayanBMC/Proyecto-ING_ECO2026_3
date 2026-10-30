@@ -6,10 +6,27 @@ Simulador académico de créditos e ingeniería económica en pesos colombianos 
 - Modo invitado sin registro: calcula y exporta reportes sin guardar nada.
 - Registro con correo, contraseña, código de verificación y aceptación de la política de datos (HU-01). Inicio y cierre de sesión (HU-02) y recuperación de contraseña con código al correo (HU-03).
 - Simulador de créditos (HU-07 a HU-10): tasas nominales vencidas, anticipadas y efectivas con su EA y tasa periódica, y tabla Francés o Alemán.
-- En Neon → Settings → Better Auth deben estar activos "Sign-up with Email", "Verify at Sign-up" y el método "Verification code"; si no, no llegan los códigos. Más adelante guardará perfil y simulaciones en Neon (PostgreSQL con RLS).
+- Perfil, consentimientos y (más adelante) simulaciones se guardan en Neon (PostgreSQL con RLS).
+- En Neon → Settings → Better Auth deben estar activos "Sign-up with Email", "Verify at Sign-up" y el método "Verification code"; si no, no llegan los códigos.
 - Costo $0: Cloudflare Workers (solo archivos estáticos, gratis e ilimitados), GitHub Actions y Neon Free, sin tarjeta.
 
 El avance historia por historia está en `BITACORA_DESARROLLO.md`.
+
+## Historias de usuario realizadas
+
+| HU | Historia | Qué se hizo |
+|---|---|---|
+| — | Iteración 0: estructura y CI/CD | Proyecto React + TypeScript + Vite, núcleo decimal de 34 dígitos, lectura de números en formato colombiano, cabeceras de seguridad y pipeline que prueba y despliega en Cloudflare solo si todo pasa. |
+| HU-01 | Registro con política de datos | Página "Crear cuenta" con nombre, correo y contraseña. Se verifica el correo con un código y se guarda la aceptación de la política de datos (Ley 1581) con versión y fecha. Sin marcar la casilla no se crea la cuenta. |
+| HU-02 | Iniciar y cerrar sesión | Página "Iniciar sesión". Con contraseña errada sale "Correo o contraseña incorrectos" sin revelar si el correo existe. Con sesión, la cabecera muestra "Hola, {nombre}", "Mi perfil" y "Cerrar sesión". |
+| HU-03 | Recuperar la contraseña | "¿Olvidaste tu contraseña?" envía un código al correo para definir una nueva. Si el código está mal o venció, se puede pedir otro. |
+| HU-04 | Perfil | "Mi perfil" guarda nombre, institución, programa, decimales (0 o 2) y días del año (360 o 365). Se carga igual en cualquier equipo, y el simulador usa sola la preferencia de decimales. |
+| HU-05 | Descargar mis datos y eliminar mi cuenta | "Descargar mis datos" baja un JSON con cuenta, perfil y consentimientos. "Eliminar mi cuenta" pide la contraseña y borra todo en cascada. |
+| HU-06 | Modo invitado | Toda la app funciona sin cuenta y no guarda nada en el navegador (ni `localStorage`, ni `sessionStorage`, ni cookies). |
+| HU-07 | Datos del crédito | Monto, número de cuotas (1 a 360) y frecuencia de pago, con el rango permitido visible al salir de cada campo. |
+| HU-08 | Tasa nominal o efectiva | Convierte la tasa a efectiva anual (EA) y a la tasa del periodo de pago, y muestra los pasos en "¿Cómo se calculó?". |
+| HU-09 | Tasas anticipadas | Acepta tasas nominales anticipadas (por ejemplo, 30 % trimestre anticipado) con el paso i_v = i_a / (1 − i_a), y rechaza j_a/m ≥ 1. |
+| HU-10 | Tabla de amortización | Tabla Francés (cuota fija) o Alemán (abono fijo), con la fila 0 del desembolso, interés, abono, saldo y totales. El saldo final siempre es 0. |
 
 ## 1. Requisitos previos
 
