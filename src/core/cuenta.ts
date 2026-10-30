@@ -52,11 +52,9 @@ export function validarRegistro(datos: DatosRegistro): ResultadoValidacion<Regis
     return { ok: true, datos: resultado.data };
   }
   const errores: ErroresRegistro = {};
-  for (const problema of resultado.error.issues) {
-    const campo = problema.path[0] as CampoRegistro | undefined;
-    if (campo && errores[campo] === undefined) {
-      errores[campo] = problema.message;
-    }
+  // Se recorre al revés para que quede el primer mensaje de cada campo.
+  for (const problema of [...resultado.error.issues].reverse()) {
+    errores[problema.path[0] as CampoRegistro] = problema.message;
   }
   // zod 4 no corre superRefine si algún campo falla; la confirmación se revisa aquí también.
   if (errores.confirmacion === undefined && datos.confirmacion !== datos.contrasena) {
@@ -65,15 +63,15 @@ export function validarRegistro(datos: DatosRegistro): ResultadoValidacion<Regis
   return { ok: false, errores };
 }
 
+const MENSAJE_CODIGO = 'El código tiene solo números. Revísalo en tu correo.';
+
 /** Código de verificación que llega al correo: solo dígitos, entre 4 y 8. */
 export const esquemaCodigo = z
   .string()
   .trim()
-  .regex(/^\d{4,8}$/, 'El código tiene solo números. Revísalo en tu correo.');
+  .regex(/^\d{4,8}$/, MENSAJE_CODIGO);
 
 export function validarCodigo(codigo: string): ResultadoValidacion<string, string> {
   const resultado = esquemaCodigo.safeParse(codigo);
-  return resultado.success
-    ? { ok: true, datos: resultado.data }
-    : { ok: false, errores: resultado.error.issues[0]?.message ?? 'Código inválido.' };
+  return resultado.success ? { ok: true, datos: resultado.data } : { ok: false, errores: MENSAJE_CODIGO };
 }
