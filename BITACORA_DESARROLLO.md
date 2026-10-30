@@ -315,3 +315,35 @@ Prueba:
 - **Causa:** el valor de la propuesta estaba mal calculado a mano. La cuota exacta $R=\frac{10.000.000\cdot 0{,}015}{1-1{,}015^{-12}}$ es 916.799,93…, y con `ROUND_HALF_UP` a 2 decimales queda 916.799,93. El motor estaba bien.
 - **Cambio:** se corrigieron T3 en la propuesta, las dos pruebas y el ejemplo de "2 decimales" en el perfil. $A_1$ pasa a 766.799,93; $I_2$ sigue en 138.498,00.
 - **Otros ajustes del mismo arreglo:** las pruebas de propiedades tienen un tiempo de espera de 60 s, y en GitHub Actions las pruebas que fallan salen como anotaciones (`reporters: ['default', 'github-actions']`).
+
+## [HU-11] - Comparar Francés y Alemán
+
+**Fecha:** 30 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions. No requiere migraciones.
+
+**Historia:** Como estudiante quiero comparar Francés y Alemán para el mismo crédito para decidir cuál cuesta menos.
+
+### ¿Qué se hizo?
+
+- `src/core/comparar.ts`: `compararSistemas` genera las dos tablas con el mismo monto, tasa y plazo, y devuelve cuota inicial, total de intereses, total pagado y el sobrecosto relativo Δ.
+- `src/ui/paginas/Simulador.tsx`: después de simular aparece el botón "Comparar sistemas", que abre una tabla Francés frente a Alemán, el Δ y una explicación corta.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Fórmula (sección 7.1):** $\Delta=\frac{T_I^{F}-T_I^{A}}{T_I^{A}}$. Los totales salen de las tablas ya redondeadas, así que coinciden con lo que se ve en cada tabla.
+- **i = 0:** si el Alemán no tiene intereses, Δ es `null` y la pantalla dice "no aplica (sin intereses)". Desde el formulario la tasa mínima es 0,01 %, así que este caso se prueba en el motor.
+- **Por qué el Alemán paga menos:** abona más capital al principio, así que el saldo (sobre el que se cobra el interés) baja más rápido.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/comparar.test.ts`
+  - Test: criterio HU-11 con T4 (12.000.000 al 1 % en 12 cuotas). Alemán: cuota inicial 1.120.000, intereses 780.000, total 12.780.000. Francés: cuota 1.066.185 (`PAGO(1%;12;-12000000)` = 1.066.185,44), intereses ≈ 794.225 y Δ = 1,82 %.
+  - Test: criterio HU-11 con i = 0: ambos intereses en 0 y Δ "no aplica".
+- `tests/unit/Simulador.test.tsx`
+  - Test: criterio HU-11 en pantalla: "Comparar sistemas" muestra cuota inicial, intereses y total pagado de ambos y el texto del Δ.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+1. Abrir el simulador y escribir 12.000.000, 12 cuotas, tasa 1, "Efectiva", periodo "Mensual". Pulsar "Simular".
+2. Pulsar "Comparar sistemas". Resultado esperado: Alemán con cuota inicial $ 1.120.000, intereses $ 780.000 y total $ 12.780.000; Francés con cuota $ 1.066.185 e intereses cercanos a $ 794.225; Δ ≈ 1,82 %. "Comparar sistemas" es un botón que muestra u oculta la comparación.

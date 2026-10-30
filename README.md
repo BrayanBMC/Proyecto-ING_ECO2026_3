@@ -27,6 +27,7 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-08 | Tasa nominal o efectiva | Convierte la tasa a efectiva anual (EA) y a la tasa del periodo de pago, y muestra los pasos en "¿Cómo se calculó?". |
 | HU-09 | Tasas anticipadas | Acepta tasas nominales anticipadas (por ejemplo, 30 % trimestre anticipado) con el paso i_v = i_a / (1 − i_a), y rechaza j_a/m ≥ 1. |
 | HU-10 | Tabla de amortización | Tabla Francés (cuota fija) o Alemán (abono fijo), con la fila 0 del desembolso, interés, abono, saldo y totales. El saldo final siempre es 0. |
+| HU-11 | Comparar sistemas | "Comparar sistemas" muestra Francés frente a Alemán para el mismo crédito: cuota inicial, total de intereses, total pagado y cuánto más intereses paga el Francés (Δ). |
 
 ## 1. Requisitos previos
 

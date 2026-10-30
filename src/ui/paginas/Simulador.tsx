@@ -2,12 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react';
 import {
   FRECUENCIAS,
   calcularTasa,
+  compararSistemas,
   generarTabla,
   nombreFrecuencia,
   validarMonto,
   validarPlazo,
   validarSimulacion,
   validarTasa,
+  type Comparacion,
   type ErroresSimulacion,
   type EscalaMonetaria,
   type Frecuencia,
@@ -46,6 +48,67 @@ interface Resultado {
   simulacion: Simulacion;
   tasa: ResultadoTasa;
   tabla: Tabla;
+  comparacion: Comparacion;
+}
+
+/** HU-11: Francés frente a Alemán para el mismo crédito. */
+function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion; escala: EscalaMonetaria }) {
+  const { frances, aleman, sobrecosto } = comparacion;
+  const filas = [
+    { nombre: 'Cuota inicial', f: frances.cuotaInicial, a: aleman.cuotaInicial },
+    { nombre: 'Total de intereses', f: frances.totalIntereses, a: aleman.totalIntereses },
+    { nombre: 'Total pagado', f: frances.totalPagado, a: aleman.totalPagado },
+  ];
+  const [abierto, setAbierto] = useState(false);
+  return (
+    <section className="tarjeta tarjeta--ancha" aria-label="Comparación de sistemas">
+      <button
+        type="button"
+        className="boton boton--secundario"
+        aria-expanded={abierto}
+        onClick={() => setAbierto((a) => !a)}
+      >
+        {abierto ? 'Ocultar comparación' : 'Comparar sistemas'}
+      </button>
+      {abierto && (
+        <>
+        <div className="tabla-contenedor">
+          <table className="tabla">
+            <caption className="sr-solo">Francés frente a Alemán</caption>
+            <thead>
+              <tr>
+                <th scope="col">Concepto</th>
+                <th scope="col">Francés</th>
+                <th scope="col">Alemán</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((fila) => (
+                <tr key={fila.nombre}>
+                  <th scope="row">{fila.nombre}</th>
+                  <td>{pesos(fila.f, escala)}</td>
+                  <td>{pesos(fila.a, escala)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="comparar-delta">
+          Sobrecosto del Francés (Δ):{' '}
+          <strong>
+            {sobrecosto
+              ? `${porcentaje(sobrecosto, 2)} más de intereses que el Alemán`
+              : 'no aplica (sin intereses)'}
+          </strong>
+        </p>
+        <p className="tarjeta__texto">
+          El Alemán abona más capital al comienzo, así que el saldo baja más rápido y se pagan menos intereses. El
+          Francés tiene una cuota fija y más baja al inicio.
+        </p>
+        </>
+      )}
+    </section>
+  );
 }
 
 function sigla(tipo: TipoTasa, m: Frecuencia): string {
@@ -117,7 +180,8 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
       frecuenciaPago: s.frecuenciaPago,
     });
     const tabla = generarTabla({ capital: s.monto, tasa: tasa.periodica, plazo: s.plazo, sistema: s.sistema, escala });
-    setResultado({ simulacion: s, tasa, tabla });
+    const comparacion = compararSistemas({ capital: s.monto, tasa: tasa.periodica, plazo: s.plazo, escala });
+    setResultado({ simulacion: s, tasa, tabla, comparacion });
   };
 
   const periodoPago = nombreFrecuencia(f.frecuenciaPago).periodo;
@@ -268,6 +332,8 @@ export function PaginaSimulador({ servicio = null, usuario = null }: Props) {
               </ol>
             </details>
           </section>
+
+          <ComparacionSistemas comparacion={resultado.comparacion} escala={escala} />
 
           <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-tabla">
             <h2 id="titulo-tabla">

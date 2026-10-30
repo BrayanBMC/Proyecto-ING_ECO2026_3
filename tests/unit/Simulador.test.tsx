@@ -22,8 +22,16 @@ function llenar({ monto = '10.000.000', plazo = '12', tasa = '1,5' } = {}) {
 
 const simular = () => fireEvent.click(screen.getByRole('button', { name: 'Simular' }));
 
+const tablaAmortizacion = () => screen.getByRole('table', { name: /^Cuotas por/ });
+
 const celda = (fila: number, columna: number) =>
-  within(screen.getByRole('table')).getAllByRole('row')[fila + 1]!.querySelectorAll('th, td')[columna] ?? null;
+  within(tablaAmortizacion()).getAllByRole('row')[fila + 1]!.querySelectorAll('th, td')[columna] ?? null;
+
+/** Celda de la tabla "Comparar sistemas": fila por concepto, columna 1 = Francés, 2 = Alemán. */
+const comparada = (concepto: string, columna: 1 | 2) =>
+  within(screen.getByRole('table', { name: 'Francés frente a Alemán' }))
+    .getByRole('rowheader', { name: concepto })
+    .parentElement!.querySelectorAll('th, td')[columna] ?? null;
 
 describe('HU-07: datos del crédito', () => {
   it('criterio HU-07: con plazo 361 o monto 0, al salir del campo muestra el rango y no simula', () => {
@@ -108,7 +116,7 @@ describe('HU-10: tabla de amortización', () => {
     elegir('Periodo de la tasa', '12');
     simular();
 
-    expect(screen.getAllByRole('row')).toHaveLength(14); // encabezado + filas 0 a 12
+    expect(within(tablaAmortizacion()).getAllByRole('row')).toHaveLength(14); // encabezado + filas 0 a 12
     expect(texto(celda(0, 0))).toBe('0');
     expect(texto(celda(0, 4))).toBe('$ 10.000.000');
     expect(texto(celda(1, 1))).toBe('$ 916.800');
@@ -156,5 +164,28 @@ describe('HU-10: tabla de amortización', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Abrir simulador' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Simulador de créditos' })).toBeTruthy();
     window.history.pushState(null, '', '/');
+  });
+});
+
+describe('HU-11: comparar sistemas', () => {
+  it('criterio HU-11: "Comparar sistemas" muestra cuota inicial, intereses y total pagado de ambos, y el sobrecosto Δ', () => {
+    render(<PaginaSimulador />);
+    llenar({ monto: '12.000.000', tasa: '1' });
+    elegir('Tipo de tasa', 'efectiva');
+    elegir('Periodo de la tasa', '12');
+    simular();
+
+    expect(screen.queryByRole('table', { name: 'Francés frente a Alemán' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Comparar sistemas' }));
+
+    // Alemán (T4): cuota inicial 1.120.000, intereses 780.000, total 12.780.000.
+    expect(texto(comparada('Cuota inicial', 2))).toBe('$ 1.120.000');
+    expect(texto(comparada('Total de intereses', 2))).toBe('$ 780.000');
+    expect(texto(comparada('Total pagado', 2))).toBe('$ 12.780.000');
+    // Francés: cuota fija 1.066.185 (PAGO(1%;12;-12000000) = 1.066.185,44).
+    expect(texto(comparada('Cuota inicial', 1))).toBe('$ 1.066.185');
+    expect(texto(screen.getByText(/Sobrecosto del Francés/).closest('p'))).toMatch(
+      /Sobrecosto del Francés \(Δ\): \d+,\d{2} % más de intereses que el Alemán/,
+    );
   });
 });
