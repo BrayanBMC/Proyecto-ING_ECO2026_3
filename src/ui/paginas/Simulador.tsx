@@ -4,7 +4,9 @@ import {
   calcularTasa,
   compararGracias,
   compararSistemas,
+  explicarAmortizacion,
   generarTabla,
+  numero,
   nombreFrecuencia,
   validarMonto,
   validarPlazo,
@@ -27,6 +29,7 @@ import {
 import type { ServicioCuenta, Usuario } from '../../adapters/auth/ServicioCuenta';
 import { Campo } from '../Campo';
 import { pesos, porcentaje } from '../formato';
+import { Pasos } from '../Pasos';
 import { FormularioAbono } from './Abono';
 import { TarjetaUsura } from './Usura';
 
@@ -427,16 +430,15 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
                 <dd>{porcentaje(resultado.tasa.periodica)}</dd>
               </div>
             </dl>
-            <details>
-              <summary>¿Cómo se calculó?</summary>
-              <ol className="pasos">
-                {resultado.tasa.pasos.map((paso) => (
-                  <li key={paso.descripcion}>
-                    <span>{paso.descripcion}</span> = <span className="mono">{porcentaje(paso.valor, 6)}</span>
-                  </li>
-                ))}
-              </ol>
-            </details>
+            <Pasos
+              titulo="¿Cómo se calculó?"
+              pasos={resultado.tasa.pasos.map((paso) => ({
+                titulo: paso.descripcion,
+                formula: '',
+                sustitucion: paso.sustitucion,
+                resultado: `${numero(paso.valor)} (${porcentaje(paso.valor, 6)})`,
+              }))}
+            />
           </section>
 
           <TarjetaUsura eaCredito={resultado.tasa.ea} {...(hoy ? { hoy } : {})} />
@@ -472,6 +474,20 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
                 <dd>{pesos(tabla!.totalPagado, escala)}</dd>
               </div>
             </dl>
+            <Pasos
+              titulo="¿Cómo se calculó la cuota?"
+              pasos={explicarAmortizacion(
+                {
+                  capital: resultado.simulacion.monto,
+                  tasa: resultado.tasa.periodica,
+                  plazo: resultado.simulacion.plazo,
+                  sistema: resultado.simulacion.sistema,
+                  gracia: resultado.gracia,
+                  tabla: tabla!,
+                },
+                (monto) => pesos(monto, escala),
+              )}
+            />
             <div className="tabla-contenedor" tabIndex={0} role="region" aria-label="Tabla de amortización">
               <table className="tabla">
                 <caption className="sr-solo">

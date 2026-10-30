@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { dec, evaluarUsura, ultimaVigencia, validarIbc, vigenciaActual, type Dec } from '../../core';
 import { Campo } from '../Campo';
 import { porcentaje } from '../formato';
+import { Pasos } from '../Pasos';
 
 /** "2026-10-31" → "31/10/2026" */
 const fechaCo = (iso: string) => iso.split('-').reverse().join('/');
@@ -57,6 +58,23 @@ export function TarjetaUsura({ eaCredito, hoy = new Date() }: { eaCredito: Dec; 
             La EA del crédito ({porcentaje(eaCredito, 2)}) está {estado.margenPb.abs().toFixed(0)} puntos básicos{' '}
             {estado.supera ? 'por encima' : 'por debajo'} del límite. {ibc.origen}.
           </p>
+          <Pasos
+            titulo="¿Cómo se calculó?"
+            pasos={[
+              {
+                titulo: 'Tasa de usura (artículo 884 del Código de Comercio)',
+                formula: 'Usura = 1,5 · IBC',
+                sustitucion: `1,5 · ${porcentaje(ibc.valor, 2)}`,
+                resultado: `${porcentaje(estado.usuraEA, 2)} EA`,
+              },
+              {
+                titulo: 'Comparación en efectiva anual',
+                formula: 'EA del crédito − usura',
+                sustitucion: `${porcentaje(eaCredito, 2)} − ${porcentaje(estado.usuraEA, 2)}`,
+                resultado: `${estado.margenPb.toFixed(0)} puntos básicos`,
+              },
+            ]}
+          />
         </>
       )}
       {!vigente && (

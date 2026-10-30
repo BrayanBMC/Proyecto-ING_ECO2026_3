@@ -27,7 +27,10 @@ export {
   eaAPeriodica,
   eaANominal,
   calcularTasa,
+  numero,
 } from './tasas';
+export { explicarAmortizacion } from './explicacion';
+export type { Paso } from './explicacion';
 export type { Frecuencia, TipoTasa, PasoTasa, ResultadoTasa } from './tasas';
 export { cuotaFrances, cuotasRestantes, generarTabla } from './amortizacion';
 export type { Sistema, Fila, Tabla, TipoGracia, Gracia, ModoAbono, AbonoExtra } from './amortizacion';
