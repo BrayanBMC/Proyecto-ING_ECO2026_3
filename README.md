@@ -36,7 +36,7 @@ Copia `.env.example` como `.env.local` (este archivo no se sube al repositorio).
 | `VITE_NEON_AUTH_URL` | No (aún no se usa) | HU-01 | URL de Managed Better Auth de Neon. Es pública por diseño |
 | `VITE_NEON_DATA_API_URL` | No (aún no se usa) | HU-01 | URL de la Data API de Neon. Es pública por diseño; RLS protege los datos |
 
-Secretos del pipeline (se guardan en GitHub → Settings → Secrets and variables → Actions, nunca en el código):
+Secretos del pipeline. Se guardan en GitHub → Settings → Environments → **`neon`** → Environment secrets, nunca en el código. Los dos jobs del pipeline declaran `environment: neon` para poder leerlos. Las URL de Neon se aceptan como secreto o como variable.
 
 | Nombre | Tipo | Uso |
 |---|---|---|
