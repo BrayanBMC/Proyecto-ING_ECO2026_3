@@ -4,7 +4,10 @@ import {
   LONGITUD_MAXIMA_NOMBRE,
   VERSION_POLITICA,
   validarCodigo,
+  validarCorreo,
+  validarInicioSesion,
   validarRegistro,
+  validarRestablecimiento,
   type DatosRegistro,
 } from '../../src/core';
 
@@ -106,5 +109,57 @@ describe('core/cuenta: validarCodigo', () => {
     if (!r.ok) {
       expect(r.errores).toBe('El código tiene solo números. Revísalo en tu correo.');
     }
+  });
+});
+
+describe('core/cuenta: validarInicioSesion (HU-02)', () => {
+  it('acepta correo y contraseña, y normaliza el correo', () => {
+    const r = validarInicioSesion({ correo: ' Ana@Correo.CO ', contrasena: 'x' });
+    expect(r.ok && r.datos).toEqual({ correo: 'ana@correo.co', contrasena: 'x' });
+  });
+
+  it('pide correo válido y contraseña', () => {
+    const r = validarInicioSesion({ correo: 'ana', contrasena: '' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errores).toEqual({
+        correo: 'Escribe un correo válido, por ejemplo nombre@dominio.co.',
+        contrasena: 'Escribe tu contraseña.',
+      });
+    }
+  });
+});
+
+describe('core/cuenta: validarRestablecimiento (HU-03)', () => {
+  it('acepta código, contraseña nueva y confirmación iguales', () => {
+    const r = validarRestablecimiento({ codigo: '123456', contrasena: 'otra frase larga', confirmacion: 'otra frase larga' });
+    expect(r.ok).toBe(true);
+  });
+
+  it('rechaza solo la confirmación cuando lo demás es válido', () => {
+    const r = validarRestablecimiento({ codigo: '123456', contrasena: 'otra frase larga', confirmacion: 'otra' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errores).toEqual({ confirmacion: 'Las contraseñas no coinciden.' });
+    }
+  });
+
+  it('reporta código, contraseña corta y confirmación a la vez', () => {
+    const r = validarRestablecimiento({ codigo: 'abc', contrasena: 'corta', confirmacion: 'otra' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(Object.keys(r.errores).sort()).toEqual(['codigo', 'confirmacion', 'contrasena']);
+    }
+  });
+});
+
+describe('core/cuenta: validarCorreo (HU-03)', () => {
+  it('normaliza un correo válido', () => {
+    const r = validarCorreo(' Ana@Correo.co ');
+    expect(r.ok && r.datos).toBe('ana@correo.co');
+  });
+
+  it('rechaza un correo inválido', () => {
+    expect(validarCorreo('ana')).toEqual({ ok: false, errores: 'Escribe un correo válido, por ejemplo nombre@dominio.co.' });
   });
 });

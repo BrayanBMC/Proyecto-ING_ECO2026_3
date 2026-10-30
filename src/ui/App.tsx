@@ -1,7 +1,10 @@
-import type { ServicioCuenta } from '../adapters/auth/ServicioCuenta';
-import { Enlace, useRuta } from './navegacion';
+import { useCallback, useEffect, useState } from 'react';
+import type { ServicioCuenta, Usuario } from '../adapters/auth/ServicioCuenta';
+import { Enlace, navegar, useRuta } from './navegacion';
+import { PaginaIniciarSesion } from './paginas/IniciarSesion';
 import { PaginaInicio } from './paginas/Inicio';
 import { PaginaPolitica } from './paginas/PoliticaDatos';
+import { PaginaRecuperar } from './paginas/RecuperarContrasena';
 import { PaginaRegistro } from './paginas/Registro';
 
 export const NOMBRE_APP = 'Amortiza';
@@ -11,12 +14,22 @@ interface Props {
   servicioCuenta?: ServicioCuenta | null;
 }
 
-function Pagina({ ruta, servicioCuenta }: { ruta: string; servicioCuenta: ServicioCuenta | null }) {
+interface PropsPagina {
+  ruta: string;
+  servicioCuenta: ServicioCuenta | null;
+  alCambiarSesion: () => Promise<void>;
+}
+
+function Pagina({ ruta, servicioCuenta, alCambiarSesion }: PropsPagina) {
   switch (ruta.replace(/\/+$/, '') || '/') {
     case '/':
       return <PaginaInicio />;
     case '/registro':
-      return <PaginaRegistro servicio={servicioCuenta} />;
+      return <PaginaRegistro servicio={servicioCuenta} alCambiarSesion={alCambiarSesion} />;
+    case '/iniciar-sesion':
+      return <PaginaIniciarSesion servicio={servicioCuenta} alCambiarSesion={alCambiarSesion} />;
+    case '/recuperar-contrasena':
+      return <PaginaRecuperar servicio={servicioCuenta} />;
     case '/politica-de-datos':
       return <PaginaPolitica />;
     default:
@@ -34,6 +47,22 @@ function Pagina({ ruta, servicioCuenta }: { ruta: string; servicioCuenta: Servic
 
 export function App({ servicioCuenta = null }: Props) {
   const ruta = useRuta();
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+
+  const actualizarSesion = useCallback(async () => {
+    setUsuario(servicioCuenta ? await servicioCuenta.sesionActual() : null);
+  }, [servicioCuenta]);
+
+  // HU-02: al abrir la app se consulta si hay sesión; si no, se entra como invitado.
+  useEffect(() => {
+    void servicioCuenta?.sesionActual().then(setUsuario);
+  }, [servicioCuenta]);
+
+  const cerrarSesion = async () => {
+    await servicioCuenta?.cerrarSesion();
+    setUsuario(null);
+    navegar('/');
+  };
 
   return (
     <>
@@ -46,19 +75,35 @@ export function App({ servicioCuenta = null }: Props) {
           <span className="marca__nombre">{NOMBRE_APP}</span>
         </Enlace>
         <nav className="cabecera__acciones" aria-label="Cuenta">
-          <span className="etiqueta-modo" role="status">
-            Invitado: no se guarda nada
-          </span>
-          {ruta !== '/registro' && (
-            <Enlace className="boton boton--pequeno" href="/registro">
-              Crear cuenta
-            </Enlace>
+          {usuario ? (
+            <>
+              <span className="etiqueta-modo">Hola, {usuario.nombre}</span>
+              <button type="button" className="boton boton--pequeno boton--secundario" onClick={cerrarSesion}>
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="etiqueta-modo" role="status">
+                Invitado: no se guarda nada
+              </span>
+              {ruta !== '/iniciar-sesion' && (
+                <Enlace className="boton boton--pequeno boton--secundario" href="/iniciar-sesion">
+                  Iniciar sesión
+                </Enlace>
+              )}
+              {ruta !== '/registro' && (
+                <Enlace className="boton boton--pequeno" href="/registro">
+                  Crear cuenta
+                </Enlace>
+              )}
+            </>
           )}
         </nav>
       </header>
 
       <main id="contenido" className="contenido" tabIndex={-1}>
-        <Pagina ruta={ruta} servicioCuenta={servicioCuenta} />
+        <Pagina ruta={ruta} servicioCuenta={servicioCuenta} alCambiarSesion={actualizarSesion} />
       </main>
 
       <footer className="pie">

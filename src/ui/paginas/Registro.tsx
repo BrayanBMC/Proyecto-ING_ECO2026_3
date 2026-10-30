@@ -19,9 +19,11 @@ const VACIO: DatosRegistro = { nombre: '', correo: '', contrasena: '', confirmac
 
 interface Props {
   servicio: ServicioCuenta | null;
+  /** Avisa a la app que ya hay sesión, para que la cabecera muestre al usuario (HU-02). */
+  alCambiarSesion?: () => Promise<void>;
 }
 
-export function PaginaRegistro({ servicio }: Props) {
+export function PaginaRegistro({ servicio, alCambiarSesion }: Props) {
   const [paso, setPaso] = useState<Paso>('formulario');
   const [datos, setDatos] = useState<DatosRegistro>(VACIO);
   const [errores, setErrores] = useState<ErroresRegistro>({});
@@ -94,6 +96,7 @@ export function PaginaRegistro({ servicio }: Props) {
     if (resultado.ok) {
       setDatos(VACIO); // la contraseña no se queda en memoria
       setPaso('listo');
+      await alCambiarSesion?.();
     } else {
       setPaso('consentimiento');
       setAlerta(resultado.mensaje);
