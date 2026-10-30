@@ -1,9 +1,12 @@
+import { Enlace } from '../navegacion';
+
 const MODULOS = [
   {
     id: 'simulador',
     titulo: 'Simulador de créditos',
     detalle: 'Francés y Alemán, gracia, abonos extra y alerta de usura.',
     destacado: true,
+    ruta: '/simulador',
   },
   { id: 'compuesto', titulo: 'Interés compuesto', detalle: 'Despeja valor futuro, presente, tasa o periodos.' },
   { id: 'anualidades', titulo: 'Anualidades', detalle: 'Vencidas y anticipadas: S, P y cuota.' },
@@ -30,7 +33,13 @@ export function PaginaInicio() {
             <li key={modulo.id} className={'destacado' in modulo ? 'bento__celda bento__celda--grande' : 'bento__celda'}>
               <h3 className="bento__titulo">{modulo.titulo}</h3>
               <p className="bento__detalle">{modulo.detalle}</p>
-              <span className="bento__estado">En construcción</span>
+              {'ruta' in modulo ? (
+                <Enlace className="boton" href={modulo.ruta}>
+                  Abrir simulador
+                </Enlace>
+              ) : (
+                <span className="bento__estado">En construcción</span>
+              )}
             </li>
           ))}
         </ul>

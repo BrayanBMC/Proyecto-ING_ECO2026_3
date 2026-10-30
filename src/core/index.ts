@@ -16,6 +16,23 @@ export {
   validarRestablecimiento,
   validarCorreo,
 } from './cuenta';
+export {
+  FRECUENCIAS,
+  nombreFrecuencia,
+  nominalVencidaAEA,
+  nominalAnticipadaAEA,
+  anticipadaAVencida,
+  vencidaAAnticipada,
+  tasaEquivalente,
+  eaAPeriodica,
+  eaANominal,
+  calcularTasa,
+} from './tasas';
+export type { Frecuencia, TipoTasa, PasoTasa, ResultadoTasa } from './tasas';
+export { cuotaFrances, generarTabla } from './amortizacion';
+export type { Sistema, Fila, Tabla } from './amortizacion';
+export { MONTO_MAXIMO, PLAZO_MAXIMO, validarMonto, validarPlazo, validarTasa, validarSimulacion } from './simulador';
+export type { FormularioSimulacion, Simulacion, ErroresSimulacion } from './simulador';
 export { LONGITUD_MAXIMA_INSTITUCION, perfilInicial, esquemaPerfil, validarPerfil, armarExportacion } from './perfil';
 export type { Perfil, FormularioPerfil, ErroresPerfil } from './perfil';
 export type {

@@ -317,6 +317,93 @@ a {
   color: var(--sobre-acento);
 }
 
+.tarjeta--ancha {
+  max-width: 72rem;
+}
+
+.formulario--rejilla {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  align-items: start;
+}
+
+.campo select {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo);
+  color: var(--texto);
+  font: inherit;
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.cifras div {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.cifras dt {
+  color: var(--texto-secundario);
+  font-size: var(--t-xs);
+}
+
+.cifras dd {
+  margin: 0;
+  font-family: var(--fuente-mono);
+  font-size: var(--t-lg);
+}
+
+.pasos {
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tabla-contenedor {
+  overflow: auto;
+  max-height: 32rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.4rem 0.75rem;
+  text-align: right;
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+
+.tabla thead th {
+  position: sticky;
+  top: 0;
+  background: var(--superficie);
+  font-family: var(--fuente);
+}
+
+.sr-solo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .mono {
   font-family: var(--fuente-mono);
 }

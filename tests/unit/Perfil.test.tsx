@@ -41,7 +41,7 @@ describe('HU-04: perfil', () => {
     expect(((await screen.findByLabelText('Institución (opcional)')) as HTMLInputElement).value).toBe(
       'Universidad Distrital',
     );
-    expect((screen.getByLabelText('2 decimales ($ 916.799,92)') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('2 decimales ($ 916.799,93)') as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText('365 (calendario)') as HTMLInputElement).checked).toBe(true);
   });
 
@@ -52,7 +52,7 @@ describe('HU-04: perfil', () => {
 
     escribir('Institución (opcional)', 'Universidad Distrital');
     escribir('Programa (opcional)', 'Ingeniería Industrial');
-    fireEvent.click(screen.getByLabelText('2 decimales ($ 916.799,92)'));
+    fireEvent.click(screen.getByLabelText('2 decimales ($ 916.799,93)'));
     fireEvent.click(screen.getByLabelText('365 (calendario)'));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar perfil' }));
 

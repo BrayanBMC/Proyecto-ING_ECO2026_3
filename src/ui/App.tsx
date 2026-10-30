@@ -7,6 +7,7 @@ import { PaginaPerfil } from './paginas/Perfil';
 import { PaginaPolitica } from './paginas/PoliticaDatos';
 import { PaginaRecuperar } from './paginas/RecuperarContrasena';
 import { PaginaRegistro } from './paginas/Registro';
+import { PaginaSimulador } from './paginas/Simulador';
 
 export const NOMBRE_APP = 'Amortiza';
 
@@ -32,6 +33,8 @@ function Pagina({ ruta, servicioCuenta, usuario, alCambiarSesion }: PropsPagina)
       return <PaginaIniciarSesion servicio={servicioCuenta} alCambiarSesion={alCambiarSesion} />;
     case '/recuperar-contrasena':
       return <PaginaRecuperar servicio={servicioCuenta} />;
+    case '/simulador':
+      return <PaginaSimulador servicio={servicioCuenta} usuario={usuario} />;
     case '/perfil':
       return <PaginaPerfil servicio={servicioCuenta} usuario={usuario} alCambiarSesion={alCambiarSesion} />;
     case '/cuenta-eliminada':
