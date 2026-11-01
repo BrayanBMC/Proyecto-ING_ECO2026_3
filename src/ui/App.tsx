@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ServicioCuenta, Usuario } from '../adapters/auth/ServicioCuenta';
 import { Enlace, navegar, useRuta } from './navegacion';
+import { PaginaAnualidades } from './paginas/Anualidades';
+import { PaginaCompuesto } from './paginas/Compuesto';
 import { PaginaIniciarSesion } from './paginas/IniciarSesion';
 import { PaginaInicio } from './paginas/Inicio';
 import { PaginaPerfil } from './paginas/Perfil';
 import { PaginaPolitica } from './paginas/PoliticaDatos';
 import { PaginaRecuperar } from './paginas/RecuperarContrasena';
 import { PaginaRegistro } from './paginas/Registro';
+import { PaginaReparto } from './paginas/Reparto';
 import { PaginaSimulador } from './paginas/Simulador';
 
 export const NOMBRE_APP = 'Amortiza';
@@ -35,6 +38,12 @@ function Pagina({ ruta, servicioCuenta, usuario, alCambiarSesion }: PropsPagina)
       return <PaginaRecuperar servicio={servicioCuenta} />;
     case '/simulador':
       return <PaginaSimulador servicio={servicioCuenta} usuario={usuario} />;
+    case '/interes-compuesto':
+      return <PaginaCompuesto />;
+    case '/anualidades':
+      return <PaginaAnualidades />;
+    case '/reparto':
+      return <PaginaReparto />;
     case '/perfil':
       return <PaginaPerfil servicio={servicioCuenta} usuario={usuario} alCambiarSesion={alCambiarSesion} />;
     case '/cuenta-eliminada':

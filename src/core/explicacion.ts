@@ -16,7 +16,7 @@ export interface Paso {
 }
 
 const SUBINDICES = '₀₁₂₃₄₅₆₇₈₉';
-const sub = (n: number) => [...String(n)].map((d) => SUBINDICES[Number(d)]).join('');
+export const sub = (n: number) => [...String(n)].map((d) => SUBINDICES[Number(d)]).join('');
 
 export function explicarAmortizacion(
   entrada: { capital: Dec; tasa: Dec; plazo: number; sistema: Sistema; gracia: Gracia; tabla: Tabla },

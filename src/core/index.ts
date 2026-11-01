@@ -59,6 +59,43 @@ export {
   evaluarUsura,
 } from './usura';
 export type { VigenciaIbc, EstadoUsura } from './usura';
+export { pasosDeTasa, validarTasaLibre, cuatroDecimales } from './comun';
+export {
+  PERIODOS_MAXIMOS,
+  valorFuturo,
+  valorPresente,
+  tasaCompuesta,
+  periodosCompuesto,
+  calcularCompuesto,
+} from './compuesto';
+export type { Incognita, FormularioCompuesto, ErroresCompuesto, ResultadoCompuesto } from './compuesto';
+export {
+  factorFuturo,
+  factorPresente,
+  valorFuturoAnualidad,
+  valorPresenteAnualidad,
+  cuotaDesdeFuturo,
+  cuotaDesdePresente,
+  calcularAnualidad,
+} from './anualidades';
+export type {
+  TipoAnualidad,
+  ObjetivoAnualidad,
+  FormularioAnualidad,
+  ErroresAnualidad,
+  FilaAnualidad,
+  ResultadoAnualidad,
+} from './anualidades';
+export { MIN_PARTES, MAX_PARTES, repartirMayorResiduo, calcularReparto } from './reparto';
+export type {
+  MetodoReparto,
+  RepartoNumerico,
+  FilaFormularioReparto,
+  FormularioReparto,
+  ErroresReparto,
+  ParteReparto,
+  ResultadoReparto,
+} from './reparto';
 export { armarReporte } from './reporte';
 export type { DatosReporte, ReporteArmado } from './reporte';
 export { LONGITUD_MAXIMA_INSTITUCION, perfilInicial, esquemaPerfil, validarPerfil, armarExportacion } from './perfil';

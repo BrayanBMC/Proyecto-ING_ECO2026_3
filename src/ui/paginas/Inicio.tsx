@@ -7,10 +7,29 @@ const MODULOS = [
     detalle: 'Francés y Alemán, gracia, abonos extra y alerta de usura.',
     destacado: true,
     ruta: '/simulador',
+    accion: 'Abrir simulador',
   },
-  { id: 'compuesto', titulo: 'Interés compuesto', detalle: 'Despeja valor futuro, presente, tasa o periodos.' },
-  { id: 'anualidades', titulo: 'Anualidades', detalle: 'Vencidas y anticipadas: S, P y cuota.' },
-  { id: 'reparto', titulo: 'Reparto proporcional', detalle: 'Directo, inverso y compuesto, con suma exacta.' },
+  {
+    id: 'compuesto',
+    titulo: 'Interés compuesto',
+    detalle: 'Despeja valor futuro, presente, tasa o periodos.',
+    ruta: '/interes-compuesto',
+    accion: 'Abrir calculadora',
+  },
+  {
+    id: 'anualidades',
+    titulo: 'Anualidades',
+    detalle: 'Vencidas y anticipadas: S, P y cuota.',
+    ruta: '/anualidades',
+    accion: 'Abrir calculadora',
+  },
+  {
+    id: 'reparto',
+    titulo: 'Reparto proporcional',
+    detalle: 'Directo, inverso y compuesto, con suma exacta.',
+    ruta: '/reparto',
+    accion: 'Abrir calculadora',
+  },
 ] as const;
 
 export function PaginaInicio() {
@@ -33,13 +52,9 @@ export function PaginaInicio() {
             <li key={modulo.id} className={'destacado' in modulo ? 'bento__celda bento__celda--grande' : 'bento__celda'}>
               <h3 className="bento__titulo">{modulo.titulo}</h3>
               <p className="bento__detalle">{modulo.detalle}</p>
-              {'ruta' in modulo ? (
-                <Enlace className="boton" href={modulo.ruta}>
-                  Abrir simulador
-                </Enlace>
-              ) : (
-                <span className="bento__estado">En construcción</span>
-              )}
+              <Enlace className="boton" href={modulo.ruta}>
+                {modulo.accion}
+              </Enlace>
             </li>
           ))}
         </ul>
