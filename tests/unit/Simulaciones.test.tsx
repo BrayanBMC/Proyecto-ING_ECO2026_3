@@ -293,7 +293,8 @@ describe('HU-23: comparador', () => {
     fireEvent.click(screen.getByLabelText('Comparar «Barata»'));
     fireEvent.click(screen.getByLabelText('Comparar «Cara»'));
     pulsar('Comparar seleccionadas');
-    expect(within(tabla()).getByRole('columnheader', { name: 'Barata ✓ Menor costo' })).toBeTruthy();
+    expect(within(tabla()).getByRole('columnheader', { name: /^Barata\s*✓ Menor costo$/ })).toBeTruthy();
+    expect(within(tabla()).getByRole('columnheader', { name: 'Cara' })).toBeTruthy();
   });
 });
 
