@@ -353,3 +353,40 @@ describe('HU-16: ¿Cómo se calculó?', () => {
     expect(texto(usura)).toContain('= 1,5 · 19,06 %');
   });
 });
+
+vi.mock('../../src/adapters/export/pdf', () => ({ exportarPdf: vi.fn(async () => new Blob(['pdf'])) }));
+vi.mock('../../src/adapters/export/xlsx', () => ({ exportarXlsx: vi.fn(async () => new Blob(['xlsx'])) }));
+
+describe('HU-17: exportar a PDF y Excel', () => {
+  it('criterio HU-17: "Exportar a PDF" genera el archivo con los datos de la simulación', async () => {
+    const { exportarPdf } = await import('../../src/adapters/export/pdf');
+    creditoBase();
+    escribir('Periodos de gracia', '3');
+    simular();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar a PDF' }));
+    await vi.waitFor(() => expect(exportarPdf).toHaveBeenCalledTimes(1));
+    const reporte = (exportarPdf as unknown as { mock: { calls: [{ parametros: { etiqueta: string; valor: string }[] }][] } }).mock.calls[0]![0];
+    const mapa = Object.fromEntries(reporte.parametros.map((p) => [p.etiqueta, p.valor]));
+    expect(mapa['Monto del crédito']).toBe('$ 10.000.000');
+    expect(mapa['Periodos de gracia']).toBe('3 (muerta)');
+  });
+
+  it('criterio HU-17: "Exportar a Excel" genera el archivo con la escala elegida', async () => {
+    const { exportarXlsx } = await import('../../src/adapters/export/xlsx');
+    creditoBase();
+    fireEvent.click(screen.getByLabelText('2 decimales'));
+    simular();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
+    await vi.waitFor(() => expect(exportarXlsx).toHaveBeenCalledTimes(1));
+    expect((exportarXlsx as unknown as { mock: { calls: [unknown, number][] } }).mock.calls[0]![1]).toBe(2);
+  });
+
+  it('el invitado también puede exportar (HU-06)', () => {
+    creditoBase();
+    simular();
+    expect(screen.getByRole('button', { name: 'Exportar a PDF' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Exportar a Excel' })).toBeEnabled();
+  });
+});

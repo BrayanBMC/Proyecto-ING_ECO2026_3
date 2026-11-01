@@ -59,6 +59,8 @@ export {
   evaluarUsura,
 } from './usura';
 export type { VigenciaIbc, EstadoUsura } from './usura';
+export { armarReporte } from './reporte';
+export type { DatosReporte, ReporteArmado } from './reporte';
 export { LONGITUD_MAXIMA_INSTITUCION, perfilInicial, esquemaPerfil, validarPerfil, armarExportacion } from './perfil';
 export type { Perfil, FormularioPerfil, ErroresPerfil } from './perfil';
 export type {

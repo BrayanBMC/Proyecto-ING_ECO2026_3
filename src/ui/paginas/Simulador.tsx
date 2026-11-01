@@ -3,6 +3,7 @@ import {
   FRECUENCIAS,
   calcularTasa,
   compararGracias,
+  armarReporte,
   compararSistemas,
   explicarAmortizacion,
   generarTabla,
@@ -15,6 +16,7 @@ import {
   validarGracia,
   type AbonoExtra,
   type Comparacion,
+  type DatosReporte,
   type Gracia,
   type TipoGracia,
   type ErroresSimulacion,
@@ -28,6 +30,7 @@ import {
 } from '../../core';
 import type { ServicioCuenta, Usuario } from '../../adapters/auth/ServicioCuenta';
 import { Campo } from '../Campo';
+import { descargarBlob } from '../descargar';
 import { pesos, porcentaje } from '../formato';
 import { Pasos } from '../Pasos';
 import { FormularioAbono } from './Abono';
@@ -160,6 +163,51 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
   );
 }
 
+/** HU-17: exporta la simulación que se ve en pantalla a PDF y a Excel reales. */
+function BotonesExportar({ datos }: { datos: DatosReporte }) {
+  const [estado, setEstado] = useState<'listo' | 'generando' | 'error'>('listo');
+
+  const exportar = async (formato: 'pdf' | 'xlsx') => {
+    setEstado('generando');
+    try {
+      const reporte = armarReporte(datos, (monto) => pesos(monto, datos.escala));
+      if (formato === 'pdf') {
+        const { exportarPdf } = await import('../../adapters/export/pdf');
+        descargarBlob(`${reporte.nombreArchivo}.pdf`, await exportarPdf(reporte));
+      } else {
+        const { exportarXlsx } = await import('../../adapters/export/xlsx');
+        descargarBlob(`${reporte.nombreArchivo}.xlsx`, await exportarXlsx(reporte, datos.escala));
+      }
+      setEstado('listo');
+    } catch {
+      setEstado('error');
+    }
+  };
+
+  return (
+    <div className="exportar">
+      <div className="acciones">
+        <button type="button" className="boton boton--secundario" disabled={estado === 'generando'} onClick={() => exportar('pdf')}>
+          Exportar a PDF
+        </button>
+        <button type="button" className="boton boton--secundario" disabled={estado === 'generando'} onClick={() => exportar('xlsx')}>
+          Exportar a Excel
+        </button>
+      </div>
+      {estado === 'generando' && (
+        <p role="status" className="aviso">
+          Generando el archivo…
+        </p>
+      )}
+      {estado === 'error' && (
+        <p role="alert" className="alerta">
+          No pudimos generar el archivo. Inténtalo de nuevo.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function sigla(tipo: TipoTasa, m: Frecuencia): string {
   const s = nombreFrecuencia(m).sigla;
   if (tipo === 'efectiva') {
@@ -178,6 +226,8 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
   const [tipoGracia, setTipoGracia] = useState<TipoGracia>('muerta');
   const [errorGracia, setErrorGracia] = useState<string | undefined>();
   const [abono, setAbono] = useState<AbonoExtra | null>(null);
+  // HU-17: nombre e institución para el encabezado del PDF/XLSX. Vacío en modo invitado.
+  const [perfilReporte, setPerfilReporte] = useState<{ nombre: string; institucion: string | null } | undefined>(undefined);
 
   const limpiarResultado = () => {
     setResultado(null);
@@ -192,6 +242,7 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
     void servicio.leerPerfil().then((r) => {
       if (r.ok && r.perfil) {
         setEscala(r.perfil.escala);
+        setPerfilReporte({ nombre: r.perfil.nombre, institucion: r.perfil.institucion });
       }
     });
   }, [servicio, usuario]);
@@ -474,6 +525,21 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
                 <dd>{pesos(tabla!.totalPagado, escala)}</dd>
               </div>
             </dl>
+            <BotonesExportar
+              datos={{
+                monto: resultado.simulacion.monto,
+                plazo: resultado.simulacion.plazo,
+                frecuenciaPago: resultado.simulacion.frecuenciaPago,
+                sistema: resultado.simulacion.sistema,
+                gracia: resultado.gracia,
+                abono,
+                tasa: resultado.tasa,
+                tabla: tabla!,
+                escala,
+                perfil: perfilReporte,
+                generadoEn: hoy ?? new Date(),
+              }}
+            />
             <Pasos
               titulo="¿Cómo se calculó la cuota?"
               pasos={explicarAmortizacion(
