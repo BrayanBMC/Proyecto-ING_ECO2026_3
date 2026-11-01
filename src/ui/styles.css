@@ -9,7 +9,10 @@
   --exito: #1e6b3c;
   --error: #b3261e;
   --advertencia: #8a5000;
+  /* Líneas decorativas (separadores, tarjetas). */
   --borde: #d9ddd6;
+  /* Borde de los controles (campos, listas): contraste mínimo de 3:1 contra el fondo (WCAG 1.4.11). */
+  --borde-control: #6b7780;
 
   --fuente: 'IBM Plex Sans', system-ui, sans-serif;
   --fuente-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -26,11 +29,21 @@
   --espacio: 1rem;
   --foco: 3px solid var(--acento);
 
+  /* Sin atributo data-tema la app sigue la preferencia del sistema. */
   color-scheme: light dark;
 }
 
+/*
+ * Tema elegido a mano con el botón de la cabecera (React pone data-tema en <html>; no hay scripts en línea).
+ * Los valores del tema oscuro están en DOS bloques (el del sistema y el manual) porque CSS no permite
+ * reutilizar un bloque; hay una prueba (tests/unit/tema.test.ts) que comprueba que sean idénticos.
+ */
+:root[data-tema='claro'] {
+  color-scheme: light;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema='claro']) {
     --fondo: #0e1417;
     --superficie: #172127;
     --texto: #e6edf0;
@@ -41,7 +54,23 @@
     --error: #ff8f85;
     --advertencia: #f2bd4b;
     --borde: #2a3840;
+    --borde-control: #7f8f99;
   }
+}
+
+:root[data-tema='oscuro'] {
+  --fondo: #0e1417;
+  --superficie: #172127;
+  --texto: #e6edf0;
+  --texto-secundario: #9aa8b0;
+  --acento: #4fd1c1;
+  --sobre-acento: #0e1417;
+  --exito: #6fd08c;
+  --error: #ff8f85;
+  --advertencia: #f2bd4b;
+  --borde: #2a3840;
+  --borde-control: #7f8f99;
+  color-scheme: dark;
 }
 
 *,
@@ -216,7 +245,7 @@ a {
 .campo input:not([type='checkbox']) {
   min-height: 44px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-control);
   border-radius: 10px;
   background: var(--fondo);
   color: var(--texto);
@@ -335,7 +364,7 @@ a {
 .campo select {
   min-height: 44px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-control);
   border-radius: 10px;
   background: var(--fondo);
   color: var(--texto);
@@ -621,4 +650,225 @@ summary {
 .tabla th.celda-mejor {
   color: var(--exito);
   font-weight: 600;
+}
+
+/* Fase 2: selector de tema en la cabecera */
+.selector-tema {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.selector-tema__grupo {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+}
+
+.selector-tema__opcion {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: var(--t-xs);
+  cursor: pointer;
+}
+
+/* El estado no depende solo del color: el tema activo lleva una marca y va en negrita. */
+.selector-tema__opcion[aria-pressed='true'] {
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-weight: 600;
+}
+
+.selector-tema__opcion[aria-pressed='true']::before {
+  content: '✓ ';
+}
+
+/* Fase 3: ayuda contextual (botón «?», globo y cuadro «Saber más») */
+.campo__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.titulo-ayuda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.titulo-ayuda > :is(h1, h2, h3) {
+  margin: 0;
+}
+
+.ayuda {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.ayuda__boton {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--acento);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ayuda__simbolo {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ayuda__globo {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 0.5rem;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--texto) 25%, transparent);
+}
+
+.ayuda__globo[hidden] {
+  display: none;
+}
+
+/* Si no cabe a la derecha o abajo, el script solo marca estos atributos y el CSS reposiciona. */
+.ayuda__globo[data-al-final='true'] {
+  left: auto;
+  right: 0;
+}
+
+.ayuda__globo[data-arriba='true'] {
+  top: auto;
+  bottom: 100%;
+}
+
+.ayuda__mas {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--acento);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dialogo {
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.dialogo::backdrop {
+  --velo: rgb(0 0 0 / 0.55);
+  background: var(--velo);
+}
+
+.dialogo__cuerpo {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+.dialogo__cuerpo h2 {
+  font-size: var(--t-lg);
+}
+
+.dialogo__cuerpo p,
+.dialogo__cuerpo h3 {
+  margin: 0;
+}
+
+.dialogo__dato h3 {
+  font-size: var(--t-base);
+  color: var(--texto-secundario);
+}
+
+.dialogo__aviso {
+  color: var(--texto-secundario);
+  font-size: var(--t-xs);
+}
+
+/* Fase 4: ventana de bienvenida */
+.dialogo__etiqueta {
+  color: var(--acento);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.ficha dt {
+  color: var(--texto-secundario);
+}
+
+.ficha dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.dialogo__lista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.dialogo__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.dialogo__enlaces a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }

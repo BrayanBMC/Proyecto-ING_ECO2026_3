@@ -628,3 +628,77 @@ Pruebas:
 2. Probar también `0.05`, `24.5` y `2.5` como tasa. Resultado esperado: se interpretan como 0,05; 24,5 y 2,5 %.
 3. Escribir `1.500` como monto. Resultado esperado: se toma como 1.500 pesos (miles), igual que antes.
 4. Como invitado, guardar una simulación y abrir "Mis simulaciones". Resultado esperado: el aviso dice que se borran al cerrar la pestaña o pasadas 24 horas.
+
+## [Auditoría] - Revisión técnica antes de las mejoras (Fase 1)
+**Fecha:** 29 de octubre de 2026
+**Estado:** Entregada al usuario; se aprobó seguir con las fases 2, 3 y 4. Los hallazgos de backend/CI (Fase 5) quedan pendientes de aprobación.
+**Pedido:** revisar el proyecto completo (seguridad, cumplimiento, accesibilidad, rendimiento, pruebas, CI/CD, límites de Neon) y listar hallazgos con severidad, sin cambiar nada todavía.
+### Correcciones a las premisas del pedido
+- La app **ya tenía** modo claro y oscuro: los tokens de color cambiaban con `prefers-color-scheme`. Quien la vio oscura tenía el sistema operativo en oscuro. Lo que faltaba era un selector manual y los `theme-color`.
+- No existen Chart.js, KaTeX, el modelo `escenario`, la tabla `audit_log`, `tests/rls` ni `data/usura.json` (la usura está en `src/core/usura.ts`). Los PDF y Excel ya salían sobre blanco.
+### Hallazgos (20)
+| # | Severidad | Hallazgo | Propuesta |
+|---|---|---|---|
+| 1 | Alta | "Descargar mis datos" exporta `simulaciones: []` y `escenarios: []` (`core/perfil.ts`, `armarExportacion`): no incluye las simulaciones guardadas. | Incluirlas en el JSON. |
+| 2 | Alta | La política de datos quedó desactualizada ("más adelante… simulaciones", "el invitado no guarda ningún dato"). `VERSION_POLITICA = '2026-10-30'` y no hay flujo para volver a pedir aceptación. | Actualizar el texto, subir la versión y pedir re-aceptación. |
+| 3 | Alta | No hay pruebas de RLS con dos usuarios (`tests/rls` no existe). | Pruebas de aislamiento contra una base de pruebas. |
+| 4 | Alta | Los resultados no se anuncian (sin `aria-live`/foco) y los errores del simulador no llevan el foco al primer campo con error. | Fase 3: anunciar resultados y enfocar errores. |
+| 5 | Alta | Contraste de los bordes de campos ≈ 1,4:1 (`--borde`), por debajo de 3:1 (WCAG 1.4.11). | Fase 2: token `--borde-control`. |
+| 6 | Media | `db-migrate` y `db-limpieza` se pueden ejecutar desde cualquier rama. | Limitar con `if: github.ref == 'refs/heads/main'` y un environment `produccion`. |
+| 7 | Media | El job de pruebas puede ver `NEON_DATABASE_URL` y `CLOUDFLARE_API_TOKEN`. | Pasar cada secreto solo al paso que lo necesita. |
+| 8 | Media | Jerga sin explicar (EA, NMV, gracia muerta, IBC, ρ, Δ). | Fase 3: ayuda `?` y glosario. |
+| 9 | Media | La base dormida (Neon) no tiene tiempo máximo de espera ni reintentos (`neonCuenta.ts`). | Timeout y un reintento. |
+| 10 | Media | El tema no tiene selector manual ni `theme-color`. | Fase 2. |
+| 11 | Media | El IBC de usura se actualiza a mano y nada lo recuerda (`core/usura.ts`). | Workflow mensual que abra un issue el día 25. |
+| 12 | Media | No hay respaldo ni plan B documentados. | Documentar `pg_dump` manual (sin artifacts: el repositorio es público). |
+| 13 | Media | Sesiones y dominios de confianza de Better Auth sin verificar. | Revisión manual en la consola de Neon. |
+| 14 | Media | JS inicial de 397 kB (122 kB comprimido), sin carga diferida por ruta. | `React.lazy` por página. |
+| 15 | Media | Faltan pruebas de n = 1, gracia = plazo y un benchmark de 420 filas. | Agregarlas. |
+| 16 | Baja | `.boton--pequeno` mide 36 px y `.opciones label` 32 px (WCAG 2.5.8 pide 24 px mínimo; la meta del proyecto es 44). | Subir a 44 px. |
+| 17 | Baja | La tabla de 360 filas no tiene ayuda de navegación ni memoización. | Opcional. |
+| 18 | Baja | "Invitado: no se guarda nada" ya no es exacto (el invitado guarda en memoria de la pestaña). | Fase 4: cambiar el texto. |
+| 19 | Baja | `PROPUESTA_NUEVO_PROYECTO.md` quedó desactualizada (audit_log, escenario, NUMERIC, e2e, `data/usura.json`, errata T3/T9). | Actualizar. |
+| 20 | Baja | Los hosts de Neon están fijos en `public/_headers` (CSP). | Documentar el paso al cambiar de proyecto. |
+### Lo que ya estaba bien
+RLS en las 3 tablas; funciones `SECURITY DEFINER` con `search_path` fijo; CSP sin `unsafe-inline`; cero `style=` y cero uso de almacenamiento del navegador; acciones de GitHub fijadas por SHA; `npm audit` sin vulnerabilidades altas; borrado en cascada comprobado.
+### Plan gratuito de Neon en 2026
+1 GB de almacenamiento, 100 CU-horas al mes, 5 GB de transferencia y 60.000 usuarios activos al mes en Auth ([fuente](https://neon.com/faqs/free-plan-limits-and-quotas)). El diseño actual queda muy por debajo.
+### Orden de ejecución recomendado
+Backend de cumplimiento y CI (1, 2, 6, 7) → Fase 2 (+5, 10, 16) → Fase 3 (+4, 8) → Fase 4 (+18) → resto (3, 9, 11, 12, 13, 15, 20; luego 14, 17, 19).
+
+## [Mejoras] - Tema claro/oscuro, ayuda contextual `?` y ventana de bienvenida (Fases 2, 3 y 4)
+**Fecha:** 29 de octubre de 2026
+**Estado:** Código y pruebas escritos; falta la confirmación de GitHub Actions y la aprobación del usuario. **Requiere correr la migración `005`** (ver "Cómo probar").
+**Pedido:** (Fase 2) un botón para cambiar entre claro y oscuro a gusto del usuario; (Fase 3) un botón `?` con explicación junto a cada campo, resultado y término técnico; (Fase 4) una ventana de bienvenida con los datos del proyecto.
+### ¿Qué se hizo?
+- **Tema:** tokens de color en `src/ui/styles.css` para claro y oscuro, selector "Sistema / Claro / Oscuro" en la cabecera (`SelectorTema.tsx`), `src/ui/tema.ts`, dos `<meta name="theme-color">` en `index.html`, token nuevo `--borde-control` para los bordes de campos y migración `db/migrations/005_tema.sql` (columna `perfil.tema`).
+- **Ayuda:** `src/ui/ayuda/glosario.ts` (58 entradas tipadas, única fuente de textos), `src/ui/ayuda/Ayuda.tsx` (botón `?`, globo y cuadro "Saber más"), y el botón conectado en el simulador, abono, usura, perfil, interés compuesto, anualidades, reparto, mis simulaciones y guardar/compartir.
+- **Bienvenida:** `src/ui/Bienvenida.tsx`, un `<dialog>` modal que se abre al cargar la app (`main.tsx` activa la propiedad `bienvenida`).
+- `src/core/simulador.ts`: se exportan `TASA_MINIMA` y `TASA_MAXIMA` (antes eran literales dentro de `validarTasa`) para que la ayuda muestre el rango real. Es la única modificación a `src/core`; el comportamiento no cambió.
+- `ServicioCuenta`: dos métodos nuevos, `leerTema()` y `guardarTema()`.
+### ¿Cómo se hizo? (Explicación técnica)
+- **Tokens en dos bloques para el tema oscuro.** CSS no permite reutilizar un bloque de variables, así que el oscuro está dos veces: en `@media (prefers-color-scheme: dark)` con `:root:not([data-tema='claro'])` (modo "Sistema" y "Oscuro automático") y en `:root[data-tema='oscuro']` (elección manual). Se descartó `light-dark()` por el riesgo de que el empaquetador (lightningcss) lo transforme mal. Una prueba comprueba que ambos bloques sean idénticos.
+- **Cómo se aplica el tema sin scripts ni estilos en línea.** React guarda el tema en memoria (`App`) y un efecto pone o quita `data-tema` en `<html>`; el CSS reacciona a ese atributo. También ajusta el `content` de los `theme-color`. Con sesión, `leerTema` se llama al iniciar sesión y `guardarTema` al cambiar; si falla el guardado, el tema queda aplicado igual en esa visita. Sin sesión no se guarda nada: dura hasta recargar (`localStorage`, `sessionStorage`, IndexedDB y cookies siguen prohibidos).
+- **Contraste.** `--borde-control` (`#6b7780` claro, `#7f8f99` oscuro) da ≥ 3:1 para campos y listas; `--borde` queda solo para líneas decorativas. Una prueba lee `styles.css`, calcula el contraste WCAG de cada par de tokens en los dos temas y falla si baja de 4,5:1 (texto) o 3:1 (bordes y foco).
+- **Selector accesible.** Son tres botones con `aria-pressed`, alcanzables con Tab y activables con Enter/Espacio. El activo se marca con "✓" y negrita, no solo con color.
+- **Ayuda `?` sin popover API.** Es un componente propio, para que funcione igual en pruebas (jsdom) y sin depender de funciones nuevas del navegador. El globo se abre con el mouse encima (no en pantallas táctiles), con el foco del teclado, o fijándolo con un clic o toque; se cierra con Esc, con un segundo clic, al tocar fuera o al salir con Tab. Si el globo no cabe en pantalla, un efecto cambia los atributos `data-al-final` y `data-arriba` y el CSS lo reubica (sin `style=`). El botón mide 44 px y su nombre accesible es "¿Qué es «…»?". "Saber más" abre un `<dialog>` modal, y al cerrarlo el foco vuelve al botón.
+- **Dónde va el `?`.** Fuera del `<label>` (para no alterar el nombre del campo), dentro del `<legend>` de cada grupo de opciones, en cada `<dt>` de las cifras y junto a los títulos de las secciones. No se pone dentro de las tablas porque el desplazamiento horizontal recortaría el globo; las tablas tienen un `?` en su título.
+- **Un solo glosario.** `GLOSARIO` usa `as const satisfies Record<string, Termino>`; el tipo `TerminoId` sale de sus llaves, así que un id inexistente no compila. Los rangos (monto, plazo, tasa, gracia, partes, longitudes) se arman con las constantes de `src/core`.
+- **Bienvenida.** `<dialog>` con `showModal()`: el navegador atrapa el foco, vuelve inerte el resto y cierra con Esc. El foco inicial va al título para que el lector de pantalla empiece por ahí. Los enlaces a "Política de datos" y al simulador (donde está "¿Cómo se calculó?") cierran la ventana al seguirlos. El estado está en memoria: **reaparece en cada recarga de la página**, por la regla de no usar almacenamiento del navegador.
+- **Decisiones descartadas.** No se agregó axe-core (obliga a tocar el lockfile y jsdom no calcula colores): se hizo una prueba propia de contraste y pruebas estructurales. `Campo` no obliga a tener `termino` para no tocar los formularios de cuenta (fuera de alcance); la cobertura se verifica con una prueba sobre las páginas del producto.
+### Pruebas unitarias implementadas
+- `tests/unit/Tema.test.tsx`: tokens hexadecimales; bloques oscuros idénticos; contraste ≥ 4,5:1 y ≥ 3:1 en ambos temas; sin colores fuera de variables; botones de 44 px; `COLOR_BARRA` igual a `--fondo` y a `index.html`; `aplicarTema` (atributo y metas); selector con `aria-pressed`; en la app, con sesión guarda y carga el tema; sin sesión no guarda.
+- `tests/unit/Ayuda.test.tsx`: cada entrada del glosario tiene texto y la corta no pasa de 45 palabras; rangos tomados del motor; ninguna entrada huérfana; abrir con foco, Esc, clic, tocar fuera, Tab, hover y "Saber más"; sin `style=` ni almacenamiento; y cobertura: **toda** `.campo`, todo grupo de opciones y toda cifra de las páginas del producto tiene su `?` (falla con el nombre del campo que falte).
+- `tests/unit/Bienvenida.test.tsx`: datos de la ficha, aviso educativo, `<dialog>` con `h2` (un solo `h1` en la página), foco en el título, "Entendido" y cierre, enlaces, no reaparece al navegar y sí al recargar sin tocar el almacenamiento.
+### ¿Cómo probar esta funcionalidad manualmente?
+Una sola vez, después de fusionar el PR en `main`:
+1. GitHub → Actions → "Migraciones de base de datos" → Run workflow (rama `main`). Debe terminar en verde.
+2. Neon → Data API → "Refresh schema cache".
+Pruebas:
+1. Abrir la app. Resultado esperado: se abre la ventana de bienvenida con título, autor, universidad, carrera y semestre. Cerrarla con "Entendido" y con Esc (en otra carga). Recargar: vuelve a aparecer.
+2. En la cabecera pulsar "Oscuro", luego "Claro" y "Sistema". Resultado esperado: la app cambia al instante; el botón activo muestra "✓". Con "Sistema" sigue al dispositivo.
+3. Con sesión iniciada, elegir "Oscuro", cerrar sesión, volver a entrar (o abrir en otro navegador). Resultado esperado: entra en oscuro.
+4. En el simulador, pasar el mouse sobre cualquier `?`. Resultado esperado: aparece la explicación. Con Tab, el mismo botón la abre; con Esc se cierra. En el celular, un toque la abre y otro la cierra.
+5. En un `?` pulsar "Saber más". Resultado esperado: se abre un cuadro con ejemplo, valores permitidos y error común; "Cerrar" devuelve el foco al botón.
+6. Simular un crédito y revisar que la tabla, la usura y las cifras tengan su `?`.
+7. Exportar un PDF en tema oscuro. Resultado esperado: el PDF sale sobre fondo blanco.

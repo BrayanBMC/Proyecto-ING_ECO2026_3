@@ -11,6 +11,9 @@ import type { Frecuencia, TipoTasa } from './tasas';
 
 export const MONTO_MAXIMO = new D('1000000000000'); // 10^12, el rango de las pruebas de propiedades
 export const PLAZO_MAXIMO = 360;
+/** Rango de la tasa, en porcentaje. Los usa la validación y el glosario de ayuda de la interfaz. */
+export const TASA_MINIMA = new D('0.01');
+export const TASA_MAXIMA = new D(100);
 
 export interface FormularioSimulacion {
   monto: string;
@@ -56,7 +59,7 @@ export function validarPlazo(texto: string): string | null {
 
 export function validarTasa(texto: string, tipo: TipoTasa, frecuenciaTasa: Frecuencia): string | null {
   const tasa = parseNumeroEsCo(texto);
-  if (!tasa || tasa.lt('0.01') || tasa.gt(100)) {
+  if (!tasa || tasa.lt(TASA_MINIMA) || tasa.gt(TASA_MAXIMA)) {
     return 'La tasa debe estar entre 0,01 % y 100 %.';
   }
   // HU-09: con tasa anticipada, j_a/m ≥ 1 cobraría todo el capital por adelantado.

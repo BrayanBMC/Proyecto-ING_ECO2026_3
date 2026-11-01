@@ -26,6 +26,8 @@ export function servicioFalso(cambios: Partial<ServicioCuenta> = {}) {
       ok: true,
       simulacion: { id: 'nueva', nombre, parametros, actualizadoEn: '2026-11-01T12:00:00.000Z' },
     })),
+    leerTema: vi.fn<ServicioCuenta['leerTema']>(async () => null),
+    guardarTema: vi.fn<ServicioCuenta['guardarTema']>(async () => OK),
     renombrarSimulacion: vi.fn<ServicioCuenta['renombrarSimulacion']>(async () => OK),
     borrarSimulacion: vi.fn<ServicioCuenta['borrarSimulacion']>(async () => OK),
     ...cambios,

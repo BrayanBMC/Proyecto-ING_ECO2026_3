@@ -1,4 +1,6 @@
 import type { InputHTMLAttributes } from 'react';
+import { EtiquetaAyuda } from './ayuda/Ayuda';
+import type { TerminoId } from './ayuda/glosario';
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'name' | 'onChange'> & {
   nombre: string;
@@ -7,14 +9,22 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'name' | 'onChan
   alCambiar: (valor: string) => void;
   error?: string | undefined;
   ayuda?: string | undefined;
+  /** Término del glosario que explica este campo (muestra el botón «?»). */
+  termino?: TerminoId | undefined;
 };
 
 /** Campo de texto con etiqueta, ayuda y error enlazados para lectores de pantalla. */
-export function Campo({ nombre, etiqueta, valor, alCambiar, error, ayuda, ...resto }: Props) {
+export function Campo({ nombre, etiqueta, valor, alCambiar, error, ayuda, termino, ...resto }: Props) {
   const describe = [ayuda && `${nombre}-ayuda`, error && `${nombre}-error`].filter(Boolean).join(' ');
   return (
     <div className="campo">
-      <label htmlFor={nombre}>{etiqueta}</label>
+      {termino ? (
+        <EtiquetaAyuda htmlFor={nombre} termino={termino}>
+          {etiqueta}
+        </EtiquetaAyuda>
+      ) : (
+        <label htmlFor={nombre}>{etiqueta}</label>
+      )}
       <input
         {...resto}
         id={nombre}

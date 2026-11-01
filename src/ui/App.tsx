@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ServicioCuenta, Usuario } from '../adapters/auth/ServicioCuenta';
+import { Bienvenida } from './Bienvenida';
 import { Enlace, navegar, useRuta } from './navegacion';
+import { SelectorTema } from './SelectorTema';
+import { aplicarTema, type Tema } from './tema';
 import { OfertaGuardar } from './OfertaGuardar';
 import { vaciarSesionInvitado } from './sesionInvitado';
 import { PaginaAnualidades } from './paginas/Anualidades';
@@ -20,6 +23,8 @@ export const NOMBRE_APP = 'Amortiza';
 interface Props {
   /** Servicio de cuentas. Es null si el build no trae las URL de Neon. */
   servicioCuenta?: ServicioCuenta | null;
+  /** Muestra la ventana de bienvenida al cargar. La activa main.tsx; las pruebas la piden cuando la necesitan. */
+  bienvenida?: boolean;
 }
 
 interface PropsPagina {
@@ -76,9 +81,40 @@ function Pagina({ ruta, servicioCuenta, usuario, alCambiarSesion }: PropsPagina)
   }
 }
 
-export function App({ servicioCuenta = null }: Props) {
+export function App({ servicioCuenta = null, bienvenida = false }: Props) {
   const ruta = useRuta();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  // Solo en memoria: sin sesión la elección dura hasta recargar; con sesión se guarda en el perfil.
+  const [tema, setTema] = useState<Tema>('sistema');
+  const [mostrarBienvenida, setMostrarBienvenida] = useState(bienvenida);
+
+  useEffect(() => {
+    aplicarTema(tema);
+  }, [tema]);
+
+  // Con sesión, el tema guardado en el perfil se aplica solo (también en otro equipo).
+  const correo = usuario?.correo;
+  useEffect(() => {
+    if (!servicioCuenta || !correo) {
+      return;
+    }
+    let vigente = true;
+    void servicioCuenta.leerTema().then((guardado) => {
+      if (vigente && guardado) {
+        setTema(guardado);
+      }
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [servicioCuenta, correo]);
+
+  const elegirTema = (nuevo: Tema) => {
+    setTema(nuevo);
+    if (servicioCuenta && usuario) {
+      void servicioCuenta.guardarTema(nuevo); // si falla, el tema igual queda aplicado en esta visita
+    }
+  };
 
   const actualizarSesion = useCallback(async () => {
     setUsuario(servicioCuenta ? await servicioCuenta.sesionActual() : null);
@@ -107,6 +143,7 @@ export function App({ servicioCuenta = null }: Props) {
           <span className="marca__logo" aria-hidden="true" />
           <span className="marca__nombre">{NOMBRE_APP}</span>
         </Enlace>
+        <SelectorTema tema={tema} alElegir={elegirTema} />
         <nav className="cabecera__acciones" aria-label="Cuenta">
           {usuario ? (
             <>
@@ -152,6 +189,8 @@ export function App({ servicioCuenta = null }: Props) {
       <footer className="pie">
         <p>Proyecto académico de Ingeniería Económica.</p>
       </footer>
+
+      {mostrarBienvenida && <Bienvenida alCerrar={() => setMostrarBienvenida(false)} />}
     </>
   );
 }

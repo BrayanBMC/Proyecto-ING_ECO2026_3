@@ -1,5 +1,7 @@
 import { FRECUENCIAS, type EscalaMonetaria, type Frecuencia, type TipoTasa } from '../core';
 import { Campo } from './Campo';
+import { Ayuda, EtiquetaAyuda } from './ayuda/Ayuda';
+import type { TerminoId } from './ayuda/glosario';
 
 const TIPOS: { valor: TipoTasa; nombre: string }[] = [
   { valor: 'nominal-vencida', nombre: 'Nominal vencida' },
@@ -30,9 +32,12 @@ export function CamposTasa({ tasa, tipo, frecuencia, error, alCambiarTasa, alCam
         alCambiar={alCambiarTasa}
         error={error}
         ayuda="Usa coma para decimales, por ejemplo 1,5."
+        termino="tasa"
       />
       <div className="campo">
-        <label htmlFor="tipoTasa">Tipo de tasa</label>
+        <EtiquetaAyuda htmlFor="tipoTasa" termino="tipoTasa">
+          Tipo de tasa
+        </EtiquetaAyuda>
         <select id="tipoTasa" value={tipo} onChange={(e) => alCambiarTipo(e.target.value as TipoTasa)}>
           {TIPOS.map((t) => (
             <option key={t.valor} value={t.valor}>
@@ -46,6 +51,7 @@ export function CamposTasa({ tasa, tipo, frecuencia, error, alCambiarTasa, alCam
         etiqueta={tipo === 'efectiva' ? 'Periodo de la tasa' : 'Capitalización de la tasa'}
         valor={frecuencia}
         alCambiar={alCambiarFrecuencia}
+        termino="capitalizacion"
       />
     </>
   );
@@ -56,15 +62,19 @@ export function SelectorFrecuencia({
   etiqueta,
   valor,
   alCambiar,
+  termino,
 }: {
   id: string;
   etiqueta: string;
   valor: Frecuencia;
   alCambiar: (valor: Frecuencia) => void;
+  termino: TerminoId;
 }) {
   return (
     <div className="campo">
-      <label htmlFor={id}>{etiqueta}</label>
+      <EtiquetaAyuda htmlFor={id} termino={termino}>
+        {etiqueta}
+      </EtiquetaAyuda>
       <select id={id} value={valor} onChange={(e) => alCambiar(Number(e.target.value) as Frecuencia)}>
         {FRECUENCIAS.map((fr) => (
           <option key={fr.valor} value={fr.valor}>
@@ -80,7 +90,9 @@ export function SelectorFrecuencia({
 export function SelectorEscala({ escala, alCambiar }: { escala: EscalaMonetaria; alCambiar: (valor: EscalaMonetaria) => void }) {
   return (
     <fieldset className="opciones">
-      <legend>Decimales en los montos</legend>
+      <legend>
+        Decimales en los montos <Ayuda id="decimales" />
+      </legend>
       <label>
         <input type="radio" name="escala" checked={escala === 0} onChange={() => alCambiar(0)} /> Sin decimales
       </label>

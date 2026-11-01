@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { validarAbono, type AbonoExtra, type ErroresAbono, type EscalaMonetaria, type ModoAbono, type Tabla } from '../../core';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { pesos } from '../formato';
 
 interface Props {
@@ -40,7 +41,10 @@ export function FormularioAbono({ base, gracia, plazo, escala, abono, alCambiar 
 
   return (
     <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-abono">
-      <h2 id="titulo-abono">Abono extraordinario</h2>
+      <div className="titulo-ayuda">
+        <h2 id="titulo-abono">Abono extraordinario</h2>
+        <Ayuda id="abonoValor" />
+      </div>
       <p className="tarjeta__texto">Se paga al final del periodo elegido, después de su cuota.</p>
       <form className="formulario formulario--rejilla" onSubmit={aplicar} noValidate>
         <Campo
@@ -50,6 +54,7 @@ export function FormularioAbono({ base, gracia, plazo, escala, abono, alCambiar 
           valor={periodo}
           alCambiar={setPeriodo}
           error={errores.periodo}
+          termino="abonoPeriodo"
         />
         <Campo
           nombre="abono-valor"
@@ -58,9 +63,12 @@ export function FormularioAbono({ base, gracia, plazo, escala, abono, alCambiar 
           valor={valor}
           alCambiar={setValor}
           error={errores.valor}
+          termino="abonoValor"
         />
         <fieldset className="opciones">
-          <legend>¿Qué quieres reducir?</legend>
+          <legend>
+            ¿Qué quieres reducir? <Ayuda id="abonoModo" />
+          </legend>
           <label>
             <input type="radio" name="modo-abono" checked={modo === 'reducir-plazo'} onChange={() => setModo('reducir-plazo')} />{' '}
             Reducir el plazo (misma cuota)

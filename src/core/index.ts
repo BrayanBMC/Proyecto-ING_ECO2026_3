@@ -39,6 +39,8 @@ export type { Comparacion, ResumenSistema } from './comparar';
 export {
   MONTO_MAXIMO,
   PLAZO_MAXIMO,
+  TASA_MINIMA,
+  TASA_MAXIMA,
   GRACIA_MAXIMA,
   validarMonto,
   validarPlazo,

@@ -4,6 +4,7 @@ import { repoDeCuenta } from '../../adapters/repo/RepoSimulaciones';
 import { crearEnlace } from '../../adapters/share/url';
 import { nombreAutomatico, validarNombreSimulacion, type ParametrosCredito } from '../../core';
 import { Campo } from '../Campo';
+import { EtiquetaAyuda } from '../ayuda/Ayuda';
 import { Enlace } from '../navegacion';
 import { repoDelInvitado } from '../sesionInvitado';
 
@@ -74,6 +75,7 @@ export function GuardarCompartir({ parametros, servicio, usuario }: Props) {
           alCambiar={setNombre}
           error={errorNombre}
           ayuda="Opcional. Hasta 60 caracteres."
+          termino="nombreSimulacion"
         />
         <div className="acciones">
           <button type="submit" className="boton" disabled={guardando}>
@@ -101,7 +103,9 @@ export function GuardarCompartir({ parametros, servicio, usuario }: Props) {
               ? 'Enlace copiado. Quien lo abra verá la misma tabla, sin cuenta.'
               : 'No pudimos copiarlo solo: selecciona el enlace y cópialo.'}
           </p>
-          <label htmlFor="enlace-compartir">Enlace para compartir</label>
+          <EtiquetaAyuda htmlFor="enlace-compartir" termino="enlaceCompartir">
+            Enlace para compartir
+          </EtiquetaAyuda>
           <input id="enlace-compartir" readOnly value={enlace.url} onFocus={(e) => e.currentTarget.select()} />
         </div>
       )}

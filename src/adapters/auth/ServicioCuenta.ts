@@ -8,6 +8,9 @@ import type { ParametrosCredito, Perfil, SimulacionGuardada } from '../../core';
 
 export type ResultadoCuenta = { ok: true } | { ok: false; mensaje: string };
 
+/** Tema de color: «sistema» sigue la preferencia del dispositivo. */
+export type Tema = 'sistema' | 'claro' | 'oscuro';
+
 export interface DatosNuevaCuenta {
   nombre: string;
   correo: string;
@@ -56,6 +59,11 @@ export interface ServicioCuenta {
   >;
   /** HU-05: comprueba la contraseña y borra la cuenta con todos sus datos. Deja la sesión cerrada. */
   eliminarCuenta(correo: string, contrasena: string): Promise<ResultadoCuenta>;
+
+  /** Tema guardado en el perfil, o null si no hay perfil o la migración 005 aún no se aplicó. Nunca falla. */
+  leerTema(): Promise<Tema | null>;
+  /** Guarda el tema en el perfil (lo crea con el nombre de la cuenta si todavía no existe). */
+  guardarTema(tema: Tema): Promise<ResultadoCuenta>;
 
   /** HU-21: simulaciones guardadas del usuario, la más reciente primero. */
   listarSimulaciones(): Promise<{ ok: true; simulaciones: SimulacionGuardada[] } | { ok: false; mensaje: string }>;

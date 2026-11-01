@@ -14,6 +14,7 @@ import {
   type SimulacionGuardada,
 } from '../../core';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { pesos, porcentaje } from '../formato';
 import { Enlace } from '../navegacion';
 import { repoDelInvitado } from '../sesionInvitado';
@@ -183,6 +184,7 @@ export function PaginaMisSimulaciones({ servicio, usuario }: Props) {
                           valor={editando.nombre}
                           alCambiar={(v) => setEditando({ id: s.id, nombre: v })}
                           error={editando.error}
+                          termino="nombreSimulacion"
                         />
                         <div className="acciones">
                           <button type="submit" className="boton boton--pequeno">
@@ -200,15 +202,21 @@ export function PaginaMisSimulaciones({ servicio, usuario }: Props) {
                     {resumen ? (
                       <dl className="cifras">
                         <div>
-                          <dt>Primera cuota</dt>
+                          <dt>
+                            Primera cuota <Ayuda id="cuota" />
+                          </dt>
                           <dd>{pesos(resumen.cuota, escala)}</dd>
                         </div>
                         <div>
-                          <dt>Efectiva anual (EA)</dt>
+                          <dt>
+                            Efectiva anual (EA) <Ayuda id="ea" />
+                          </dt>
                           <dd>{porcentaje(resumen.ea, 2)}</dd>
                         </div>
                         <div>
-                          <dt>Total de intereses</dt>
+                          <dt>
+                            Total de intereses <Ayuda id="interesesTotales" />
+                          </dt>
                           <dd>{pesos(resumen.totalIntereses, escala)}</dd>
                         </div>
                       </dl>
@@ -285,7 +293,10 @@ export function PaginaMisSimulaciones({ servicio, usuario }: Props) {
 
       {comparando && aComparar.length >= 2 && (
         <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-comparador">
-          <h2 id="titulo-comparador">Comparador</h2>
+          <div className="titulo-ayuda">
+            <h2 id="titulo-comparador">Comparador</h2>
+            <Ayuda id="rho" />
+          </div>
           <div className="tabla-contenedor" tabIndex={0} role="region" aria-label="Comparación de simulaciones">
             <table className="tabla">
               <caption className="sr-solo">Cuota, EA, intereses y ρ de cada simulación elegida</caption>

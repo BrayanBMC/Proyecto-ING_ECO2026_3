@@ -9,6 +9,7 @@ import {
   type ResultadoAnualidad,
 } from '../../core';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { CamposTasa, SelectorEscala, SelectorFrecuencia } from '../CamposTasa';
 import { pesos, porcentaje } from '../formato';
 import { Pasos } from '../Pasos';
@@ -65,7 +66,9 @@ export function PaginaAnualidades() {
         </p>
         <form className="formulario formulario--rejilla" onSubmit={calcular} noValidate>
           <fieldset className="opciones">
-            <legend>¿Qué quieres calcular?</legend>
+            <legend>
+              ¿Qué quieres calcular? <Ayuda id="objetivoAnualidad" />
+            </legend>
             {OBJETIVOS.map((o) => (
               <label key={o.valor}>
                 <input
@@ -89,6 +92,7 @@ export function PaginaAnualidades() {
             valor={f.valor}
             alCambiar={(v) => cambiar('valor', v)}
             error={errores.valor}
+            termino={f.objetivo === 'valores' ? 'cuotaA' : f.objetivo === 'cuota-desde-s' ? 'metaS' : 'valorPresenteP'}
           />
           <Campo
             nombre="n"
@@ -99,12 +103,14 @@ export function PaginaAnualidades() {
             alCambiar={(v) => cambiar('n', v)}
             error={errores.n}
             ayuda="Entero entre 1 y 360."
+            termino="numPagos"
           />
           <SelectorFrecuencia
             id="frecuenciaPago"
             etiqueta="Frecuencia de pago"
             valor={f.frecuenciaPago}
             alCambiar={(v) => cambiar('frecuenciaPago', v)}
+            termino="frecuenciaPago"
           />
           <CamposTasa
             tasa={f.tasa}
@@ -135,14 +141,21 @@ export function PaginaAnualidades() {
 
       {resultado && (
         <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-resultado-anualidades">
-          <h2 id="titulo-resultado-anualidades">Vencida frente a anticipada</h2>
+          <div className="titulo-ayuda">
+            <h2 id="titulo-resultado-anualidades">Vencida frente a anticipada</h2>
+            <Ayuda id="anualidadVencidaAnticipada" />
+          </div>
           <dl className="cifras">
             <div>
-              <dt>Tasa por {periodo}</dt>
+              <dt>
+                Tasa por {periodo} <Ayuda id="tasaPeriodica" />
+              </dt>
               <dd>{porcentaje(resultado.tasaPeriodica, 4)}</dd>
             </div>
             <div>
-              <dt>Efectiva anual (EA)</dt>
+              <dt>
+                Efectiva anual (EA) <Ayuda id="ea" />
+              </dt>
               <dd>{porcentaje(resultado.ea, 4)}</dd>
             </div>
           </dl>

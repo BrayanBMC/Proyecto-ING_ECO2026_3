@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { dec, evaluarUsura, ultimaVigencia, validarIbc, vigenciaActual, type Dec } from '../../core';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { porcentaje } from '../formato';
 import { Pasos } from '../Pasos';
 
@@ -42,7 +43,10 @@ export function TarjetaUsura({ eaCredito, hoy = new Date() }: { eaCredito: Dec; 
 
   return (
     <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-usura">
-      <h2 id="titulo-usura">Tasa de usura</h2>
+      <div className="titulo-ayuda">
+        <h2 id="titulo-usura">Tasa de usura</h2>
+        <Ayuda id="usura" />
+      </div>
       {!vigente && (
         <p role="status" className="aviso-advertencia">
           Dato de usura vencido (vigente hasta {fechaCo(ultimaVigencia().hasta)}). Ingresa el IBC del mes para comparar.
@@ -86,8 +90,17 @@ export function TarjetaUsura({ eaCredito, hoy = new Date() }: { eaCredito: Dec; 
             valor={ibcTexto}
             alCambiar={setIbcTexto}
             error={errorIbc}
+            termino="ibc"
           />
-          <Campo nombre="ibc-fecha" etiqueta="Vigente hasta" type="date" valor={fecha} alCambiar={setFecha} error={errorFecha} />
+          <Campo
+            nombre="ibc-fecha"
+            etiqueta="Vigente hasta"
+            type="date"
+            valor={fecha}
+            alCambiar={setFecha}
+            error={errorFecha}
+            termino="ibcVigencia"
+          />
           <button type="submit" className="boton boton--secundario">
             Usar este IBC
           </button>
