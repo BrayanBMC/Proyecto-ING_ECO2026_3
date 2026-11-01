@@ -24,6 +24,8 @@ const MENSAJES: Record<string, string> = {
   SIN_SESION: 'Tu sesión terminó. Inicia sesión de nuevo.',
   // HU-21: el trigger de la base de datos limita a 50 simulaciones por usuario (código 54000).
   '54000': 'Llegaste al límite de 50 simulaciones guardadas. Borra alguna para guardar otra.',
+  // El servicio gratuito llegó a su tope global de simulaciones guardadas (migración 004).
+  '53100': 'Por ahora no se pueden guardar más simulaciones en el servicio. Copia el enlace para conservar esta o inténtalo más tarde.',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
 };
 

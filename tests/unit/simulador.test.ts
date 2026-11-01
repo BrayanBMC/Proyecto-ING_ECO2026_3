@@ -32,7 +32,7 @@ describe('core/simulador: validación (HU-07, HU-08, HU-09)', () => {
   });
 
   it('rechaza monto mal escrito, plazo decimal o vacío', () => {
-    expect(validarMonto('1.5')).toBe('Escribe el monto en pesos, por ejemplo 10.000.000.');
+    expect(validarMonto('1,2,3')).toBe('Escribe el monto en pesos, por ejemplo 10.000.000.');
     expect(validarMonto('1.000.000.000.001')).toBe('El monto debe estar entre $ 1 y $ 1.000.000.000.000.');
     expect(validarPlazo('12,5')).not.toBeNull();
     expect(validarPlazo('')).not.toBeNull();

@@ -128,6 +128,21 @@ El workflow `.github/workflows/db-migrate.yml` ("Migraciones de base de datos") 
 | `001_consentimiento.sql` | HU-01 | Tabla `consentimiento` con RLS: cada usuario solo lee e inserta sus filas, y nadie las modifica |
 | `002_perfil_y_eliminar_cuenta.sql` | HU-04, HU-05 | Tabla `perfil` con RLS y la función `eliminar_mi_cuenta()`, que borra solo la cuenta de quien la llama |
 | `003_simulaciones.sql` | HU-21 | Tabla `simulacion` (nombre y parámetros del crédito) con RLS por usuario y un tope de 50 por usuario con un trigger |
+| `004_limite_global.sql` | HU-21 | Reemplaza el trigger para agregar un tope global de 50.000 simulaciones guardadas (ver "Límites del plan gratuito de Neon") |
+
+### Límites del plan gratuito de Neon
+
+El plan gratuito de Neon da, por proyecto y según [su documentación](https://neon.com/faqs/free-plan-limits-and-quotas), 1 GB de almacenamiento, 100 CU-horas de cómputo al mes y 5 GB de transferencia. Auth cubre hasta 60.000 usuarios activos al mes. Amortiza está hecha para no pasar de ahí nunca:
+
+| Qué podría crecer | Cómo se evita |
+|---|---|
+| Datos de invitados | No se guardan en Neon. Viven en la memoria de la pestaña y se borran al cerrarla o a las 24 horas de su última modificación. Los PDF y Excel se generan en el navegador y tampoco se guardan. |
+| Simulaciones de usuarios registrados | Cada una pesa como máximo ~2,5 KB (parámetros de hasta 2.000 caracteres). Tope de 50 por usuario y de 50.000 en total (máx. ~125 MB, una octava parte del GB gratuito). Lo aplican triggers de la base de datos, no solo la app. |
+| Cuentas de relleno o abandonadas | Cada día se borran las cuentas sin verificar con más de 2 días, y las sesiones y códigos vencidos. |
+| Cómputo | La app no consulta la base de forma periódica: solo al iniciar sesión y al guardar, abrir, renombrar o borrar. Neon suspende el cómputo solo cuando no hay actividad. La limpieza diaria lo despierta un minuto. |
+| Un crecimiento que no previmos | El mismo workflow mide el almacenamiento: avisa al llegar a 500 MB y falla al llegar a 800 MB, y GitHub envía un correo. |
+
+La limpieza es el workflow `.github/workflows/db-limpieza.yml` ("Limpieza diaria de la base de datos"), que corre solo a las 03:17 hora de Colombia, usa el mismo secreto `NEON_DATABASE_URL` y ejecuta `db/mantenimiento/limpieza_diaria.sql`. También se puede lanzar a mano desde Actions. Los workflows programados corren solo desde la rama `main`, y GitHub los pausa si el repositorio pasa 60 días sin actividad: en ese caso, entra a Actions y reactívalo.
 
 El Worker no debe tener conectada la integración Git de Cloudflare (Settings → Build): esa integración publica sin correr las pruebas. Solo despliega GitHub Actions.
 
@@ -138,6 +153,7 @@ src/core/        Motor financiero y reglas de validación puras (sin UI, red ni 
 src/adapters/    Conexión con servicios externos (auth/: cuentas con Neon)
 src/ui/          Componentes React, páginas, enrutador y estilos
 db/migrations/   SQL de la base de datos en Neon (tablas y políticas RLS)
+db/mantenimiento/ SQL de la limpieza diaria de la base de datos
 tests/unit/      Pruebas unitarias (Vitest)
 public/_headers  Cabeceras de seguridad (Cloudflare las aplica a los archivos estáticos)
 wrangler.jsonc   Configuración del Worker que sirve dist/

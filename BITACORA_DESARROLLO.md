@@ -578,3 +578,53 @@ Pruebas:
 5. Marcar las 3 y pulsar "Comparar seleccionadas". Resultado esperado: columnas con cuota, EA, intereses, total pagado y ρ; "Estudio" (1 %) con "✓ Menor costo".
 6. Sin sesión (ventana privada), simular y pulsar "Copiar enlace". Pegar el enlace en otra pestaña. Resultado esperado: la misma tabla. Cambiar a mano el plazo del formulario no afecta al enlace; alterar el texto del hash muestra "El enlace no es válido".
 7. Sin sesión, simular, luego iniciar sesión. Resultado esperado: aparece "Guardar esta simulación en mi cuenta". Probar "No guardar" en una ocasión y comprobar que "Mis simulaciones" no tiene nada nuevo.
+
+## [Ajustes] - Punto decimal aceptado y protección del plan gratuito de Neon
+
+**Fecha:** 1 de noviembre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions (ver el resultado del último push a `develop`). **Requiere correr la migración `004`** (ver "Cómo probar").
+
+**Pedido:** (1) que si alguien escribe `.` en vez de `,` la app lo entienda sin que el usuario se dé cuenta; (2) que lo del invitado se borre cada día y que el uso de Neon nunca pase el límite gratuito.
+
+### ¿Qué se hizo?
+
+- `src/core/parse.ts`: `parseNumeroEsCo` acepta el punto como decimal cuando no puede ser separador de miles.
+- `src/adapters/repo/RepoSimulaciones.ts`: las simulaciones del invitado se borran solas a las 24 horas de su última modificación (`VIGENCIA_INVITADO_MS`).
+- `db/migrations/004_limite_global.sql`: tope global de 50.000 simulaciones guardadas.
+- `db/mantenimiento/limpieza_diaria.sql` y `.github/workflows/db-limpieza.yml`: limpieza diaria y alerta de uso de almacenamiento.
+- `src/adapters/auth/mensajes.ts`: mensaje en español para el código de tope global (`53100`).
+- Textos del modo invitado en "Mis simulaciones" y "Guardar y compartir": ahora dicen "se borra al cerrarla o pasadas 24 horas".
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Punto decimal sin avisar:** todos los campos numéricos pasan por una sola función, así que el cambio vale para el simulador, las tres calculadoras y el reparto. Lo que escribe el usuario no se reemplaza en el campo, solo se interpreta. Reglas:
+  - `1.5`, `0.05`, `12.75` y `24.5 %` se leen como 1,5; 0,05; 12,75 y 24,5.
+  - `1,234.56` (estilo de EE. UU.) se lee como 1.234,56.
+  - **Excepción por ambigüedad:** un punto seguido de exactamente 3 dígitos sigue siendo separador de miles (`1.500` = 1500, `10.000` = 10000), porque así se escriben los montos en Colombia y cambiarlo rompería lo que ya funciona. La única excepción es un cero a la izquierda: `0.500` = 0,5, porque un número no empieza con un grupo de miles en cero.
+  - Lo que sigue siendo ambiguo o mal formado se rechaza como antes (`1,2,3`, `12.34.567`, `1,234,567`).
+- **Invitados y Neon:** los invitados nunca escriben en Neon. Su lista vive en una variable del módulo y se depura antes de cada operación: lo que tiene más de 24 horas desde su última modificación se descarta, aunque la pestaña siga abierta. Renombrar renueva el día. No se usa `localStorage`.
+- **Tope global (migración 004):** cada simulación pesa como máximo ~2,5 KB, así que 50.000 filas ocupan como mucho ~125 MB frente a 1 GB gratuito. Para contar se usa la estimación del catálogo (`pg_class.reltuples`), que no depende de RLS (RLS solo dejaría contar las filas del propio usuario) y es barata. Ya existía el tope de 50 por usuario.
+- **Limpieza diaria:** borra cuentas sin verificar con más de 2 días (con su perfil y consentimiento en cascada) y sesiones y códigos de verificación vencidos desde hace más de un día. Better Auth puede usar nombres de columna en camelCase o snake_case, así que el SQL detecta cuál hay; si no encuentra las columnas, avisa y no borra nada. No toca simulaciones ni perfiles de cuentas verificadas.
+- **Alerta antes del límite:** el workflow mide `pg_database_size` y avisa a 500 MB (casi la mitad del GB) y falla a 800 MB. Cuando un workflow programado falla, GitHub manda un correo al dueño del repositorio.
+- **Qué no se hizo y por qué:** no se borran simulaciones de usuarios registrados por antigüedad, porque es un dato que ellos decidieron guardar y borrarlo sería perder su trabajo sin avisar. Para ellos el tope por usuario y el global mantienen el límite acotado. Si algún día el almacenamiento se acerca al límite, el aviso llega antes.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/parse.test.ts`: el punto como decimal (`1.5`, `0.05`, `24.5 %`, `-1.5`, `0.500`), el estilo de EE. UU., que `1.500`, `10.000` y `1.000.000` sigan siendo miles, los casos que se siguen rechazando y que una tasa con punto se valida igual que con coma.
+- `tests/unit/repoYEnlace.test.ts`: las simulaciones del invitado desaparecen pasadas 24 horas aunque la pestaña siga abierta, renombrar renueva el día, una vencida ya no se puede renombrar ni borrar, y las vencidas liberan lugar bajo el tope.
+- `tests/unit/simulador.test.ts`: `validarMonto` ya no rechaza `1.5`; ahora rechaza `1,2,3`.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+Una sola vez, después de fusionar el PR en `main`:
+
+1. GitHub → Actions → "Migraciones de base de datos" → Run workflow (rama `main`). Debe terminar en verde.
+2. GitHub → Actions → "Limpieza diaria de la base de datos" → Run workflow. Resultado esperado: termina en verde y el registro muestra "Cuentas sin verificar borradas: N", el tamaño total y "Almacenamiento usado: X MB de 1024 MB".
+
+Pruebas:
+
+1. En el simulador escribir monto `10.000.000`, plazo `12` y tasa `1.5` (con punto). Simular. Resultado esperado: la tasa se toma como 1,5 y no aparece ningún error ni aviso.
+2. Probar también `0.05`, `24.5` y `2.5` como tasa. Resultado esperado: se interpretan como 0,05; 24,5 y 2,5 %.
+3. Escribir `1.500` como monto. Resultado esperado: se toma como 1.500 pesos (miles), igual que antes.
+4. Como invitado, guardar una simulación y abrir "Mis simulaciones". Resultado esperado: el aviso dice que se borran al cerrar la pestaña o pasadas 24 horas.

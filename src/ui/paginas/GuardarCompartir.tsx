@@ -63,7 +63,7 @@ export function GuardarCompartir({ parametros, servicio, usuario }: Props) {
       <p className="tarjeta__texto">
         {usuario
           ? 'Se guarda en tu cuenta y la puedes abrir desde cualquier equipo.'
-          : 'Modo invitado: se guarda solo en esta pestaña y se pierde al cerrarla. Inicia sesión para conservarla.'}
+          : 'Modo invitado: se guarda solo en esta pestaña y se borra al cerrarla o pasadas 24 horas. Inicia sesión para conservarla.'}
       </p>
       <form className="formulario formulario--rejilla" onSubmit={guardar} noValidate>
         <Campo

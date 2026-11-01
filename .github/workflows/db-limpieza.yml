@@ -1,0 +1,53 @@
+name: Limpieza diaria de la base de datos
+
+# Corre sola cada día (y a mano desde Actions → "Run workflow").
+# Borra lo que no sirve, revisa cuánto espacio usa Neon y falla con aviso antes de llegar al límite gratuito
+# (1 GB de almacenamiento por proyecto). GitHub avisa por correo cuando un workflow programado falla.
+on:
+  schedule:
+    - cron: '17 8 * * *' # 08:17 UTC = 03:17 en Colombia, cuando nadie usa la app
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-limpieza
+  cancel-in-progress: false
+
+jobs:
+  limpiar:
+    name: Limpiar y revisar el uso de Neon
+    runs-on: ubuntu-latest
+    environment: neon
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Limpiar cuentas sin verificar y sesiones vencidas
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$NEON_DATABASE_URL" ]; then
+            echo "::error::Falta el secreto NEON_DATABASE_URL en el environment neon."
+            exit 1
+          fi
+          psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -f db/mantenimiento/limpieza_diaria.sql
+
+      - name: Revisar el uso de almacenamiento
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          bytes=$(psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -t -A -c "select pg_database_size(current_database())")
+          mb=$((bytes / 1024 / 1024))
+          echo "Almacenamiento usado: ${mb} MB de 1024 MB (plan gratuito de Neon)."
+          if [ "$mb" -ge 800 ]; then
+            echo "::error::La base usa ${mb} MB, más del 78 % del límite gratuito (1024 MB). Revisa qué crece antes de que se llene."
+            exit 1
+          fi
+          if [ "$mb" -ge 500 ]; then
+            echo "::warning::La base usa ${mb} MB, casi la mitad del límite gratuito (1024 MB)."
+          fi
