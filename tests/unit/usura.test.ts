@@ -30,13 +30,20 @@ describe('core/usura (HU-15)', () => {
   it('la vigencia de octubre de 2026 cubre del 1 al 31 de octubre', () => {
     expect(vigenciaActual(new Date(2026, 9, 1))?.ibcEA).toBe('0.1906');
     expect(vigenciaActual(new Date(2026, 9, 31))?.ibcEA).toBe('0.1906');
-    expect(vigenciaActual(new Date(2026, 10, 1))).toBeNull();
     expect(vigenciaActual(new Date(2026, 8, 30))).toBeNull();
+  });
+
+  it('la vigencia de noviembre de 2026 da una usura de 28,34 %', () => {
+    const v = vigenciaActual(new Date(2026, 10, 1));
+    expect(v?.ibcEA).toBe('0.1889');
+    expect(vigenciaActual(new Date(2026, 10, 30))?.ibcEA).toBe('0.1889');
+    expect(usuraDesdeIbc(dec(v!.ibcEA)).times(100).toDecimalPlaces(2).toString()).toBe('28.34');
+    expect(vigenciaActual(new Date(2026, 11, 1))).toBeNull();
   });
 
   it('ultimaVigencia devuelve la más reciente', () => {
     expect(ultimaVigencia([...VIGENCIAS_IBC, { ...VIGENCIAS_IBC[0]!, desde: '2026-09-01', hasta: '2026-09-30' }]).hasta).toBe(
-      '2026-10-31',
+      '2026-11-30',
     );
   });
 

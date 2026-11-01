@@ -25,6 +25,14 @@ export const VIGENCIAS_IBC: readonly VigenciaIbc[] = [
     fuenteUrl:
       'https://www.superfinanciera.gov.co/publicaciones/10116267/superfinanciera-certifica-el-interes-bancario-corriente/',
   },
+  {
+    // Usura certificada de noviembre: 28,34 %. IBC = 18,89 % (18,89 × 1,5 = 28,335 → 28,34).
+    modalidad: 'Consumo y ordinario',
+    ibcEA: '0.1889',
+    desde: '2026-11-01',
+    hasta: '2026-11-30',
+    fuenteUrl: 'https://www.superfinanciera.gov.co/publicaciones/10829/sala-de-prensacomunicados-de-prensa-interes-bancario-corriente-10829/',
+  },
 ];
 
 export const FACTOR_USURA = new D('1.5');
