@@ -33,6 +33,7 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-14 | Abono extraordinario | Un abono al final de un periodo que reduce la cuota (mismo plazo) o el plazo (misma cuota). Si supera el saldo del periodo, sale el error y la tabla no cambia. |
 | HU-15 | Alerta de usura | Compara la EA del crédito con la usura (1,5 × IBC certificado). Si el dato del mes venció, avisa y deja escribir el IBC a mano. El IBC se actualiza cada mes en `src/core/usura.ts`. |
 | HU-16 | ¿Cómo se calculó? | Paneles con cada paso del cálculo de la tasa, la cuota y la usura: la fórmula, la fórmula con los valores del crédito y el resultado. Cada paso se recorre con Tab y lo lee el lector de pantalla. |
+| HU-17 | Exportar a PDF y Excel | Botones que descargan la simulación como PDF (pdfmake) y Excel (write-excel-file) reales, generados en el navegador, con los parámetros reales, el perfil en el encabezado y los montos sumables en Excel. Funciona también como invitado. |
 
 ## 1. Requisitos previos
 

@@ -436,3 +436,39 @@ Con 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual:
 2. Abrir "¿Cómo se calculó la cuota?". Resultado esperado: "R = P · i / (1 − (1 + i)^−n)", "= $ 10.000.000 · 0,015 / (1 − (1 + 0,015)^−12)" y "= $ 916.800", seguido del interés, el abono y el saldo del periodo 1.
 3. Pulsar Tab varias veces. Resultado esperado: el foco pasa por cada paso con un borde visible.
 4. Abrir "¿Cómo se calculó?" en "Tasa que se aplica" y en "Tasa de usura". Resultado esperado: cada fórmula con los valores del crédito.
+
+## [HU-17] - Exportar a PDF y Excel
+
+**Fecha:** 31 de octubre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions. No requiere migraciones.
+
+**Historia:** Como usuario, con o sin cuenta, quiero exportar la tabla a PDF y Excel reales con los parámetros reales para entregarla como soporte.
+
+### ¿Qué se hizo?
+
+- `src/core/reporte.ts`: `armarReporte` arma el modelo del reporte (título, encabezado con perfil y fecha, parámetros reales, resumen, columnas y filas). Puro: devuelve las filas como texto (para el PDF) y como número ya redondeado (para que Excel las sume).
+- `src/adapters/export/pdf.ts`: `exportarPdf` genera el PDF con pdfmake 0.3.13, con encabezado, bloque de parámetros, resumen y la tabla con pie de página.
+- `src/adapters/export/xlsx.ts`: `exportarXlsx` genera el XLSX con write-excel-file 4.1.1, con los montos como número y formato `#,##0` o `#,##0.00` según la escala.
+- `src/ui/descargar.ts`: `descargarBlob` para descargar PDF y XLSX. `src/ui/paginas/Simulador.tsx`: botones "Exportar a PDF" y "Exportar a Excel" bajo la tabla, con aviso mientras se genera y mensaje de error si falla.
+- `package.json`: `pdfmake`, `write-excel-file` y `@types/pdfmake`, pinneadas exactas.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Parámetros reales (criterio HU-17):** el reporte recibe la simulación que está en pantalla (monto, plazo, frecuencia, sistema, gracia, abono, EA y tasa periódica), así que PDF y XLSX muestran los valores calculados, no constantes.
+- **Excel sumable (criterio HU-17):** los montos se escriben como número ya redondeado a la escala (entero o 2 decimales), con formato COP. Así abren en Excel y LibreOffice y se pueden sumar; no son texto.
+- **Encabezado con el perfil (HU-04):** con sesión, el simulador lee nombre e institución y los pone en el encabezado del reporte. Sin sesión, solo va la fecha.
+- **Tamaño del bundle:** pdfmake (con sus fuentes) y write-excel-file se cargan con import dinámico, solo al pulsar el botón. No entran al bundle inicial ni afectan el modo invitado hasta que se exporta.
+- **Dependencias:** `npm audit --audit-level=high` sigue en 0 (las nuevas no agregan vulnerabilidades altas).
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/reporte.test.ts`: parámetros reales (monto, cuotas, sistema, EA, tasa periódica), gracia y abono solo cuando existen, texto y número por fila con Σ de abonos = monto, escala 2, filas de gracia marcadas, encabezado del perfil con y sin institución, y el nombre del archivo con la fecha.
+- `tests/unit/Simulador.test.tsx`: criterio HU-17 con los adaptadores simulados: "Exportar a PDF" llama a `exportarPdf` con los parámetros reales (incluida la gracia); "Exportar a Excel" pasa la escala elegida; el invitado también puede exportar.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+1. Simular 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual, con 3 periodos de gracia.
+2. Pulsar "Exportar a PDF". Resultado esperado: se descarga `amortiza-simulacion-AAAA-MM-DD.pdf` con el encabezado, los parámetros reales (incluida la gracia) y la tabla completa.
+3. Pulsar "Exportar a Excel". Resultado esperado: se descarga el `.xlsx`; al abrirlo en Excel o LibreOffice los montos son números y se pueden sumar.
+4. Con sesión, guardar nombre e institución en el perfil y volver a exportar. Resultado esperado: el encabezado del PDF los muestra.
