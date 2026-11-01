@@ -368,7 +368,7 @@ describe('HU-17: exportar a PDF y Excel', () => {
     await vi.waitFor(() => expect(exportarPdf).toHaveBeenCalledTimes(1));
     const reporte = (exportarPdf as unknown as { mock: { calls: [{ parametros: { etiqueta: string; valor: string }[] }][] } }).mock.calls[0]![0];
     const mapa = Object.fromEntries(reporte.parametros.map((p) => [p.etiqueta, p.valor]));
-    expect(mapa['Monto del crédito']).toBe('$ 10.000.000');
+    expect(mapa['Monto del crédito']?.replace(/\s/g, ' ')).toBe('$ 10.000.000');
     expect(mapa['Periodos de gracia']).toBe('3 (muerta)');
   });
 

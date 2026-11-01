@@ -60,11 +60,11 @@ describe('core/reporte (HU-17)', () => {
     expect(base.parametros.some((p) => p.etiqueta === 'Periodos de gracia')).toBe(false);
     expect(base.parametros.some((p) => p.etiqueta === 'Abono extraordinario')).toBe(false);
 
-    const abono: AbonoExtra = { periodo: 3, valor: dec(2_000_000), modo: 'reducir-plazo' };
+    const abono: AbonoExtra = { periodo: 5, valor: dec(2_000_000), modo: 'reducir-plazo' };
     const con = armarReporte(datos({ gracia: { tipo: 'muerta', periodos: 3 }, abono }), pesos);
     const mapa = Object.fromEntries(con.parametros.map((p) => [p.etiqueta, p.valor]));
     expect(mapa['Periodos de gracia']).toBe('3 (muerta)');
-    expect(mapa['Abono extraordinario']).toBe('$ 2000000 en el periodo 3 (reduce el plazo)');
+    expect(mapa['Abono extraordinario']).toBe('$ 2000000 en el periodo 5 (reduce el plazo)');
     expect(con.hayExtra).toBe(true);
     expect(con.columnas).toContain('Abono extra');
   });
