@@ -702,3 +702,26 @@ Pruebas:
 5. En un `?` pulsar "Saber más". Resultado esperado: se abre un cuadro con ejemplo, valores permitidos y error común; "Cerrar" devuelve el foco al botón.
 6. Simular un crédito y revisar que la tabla, la usura y las cifras tengan su `?`.
 7. Exportar un PDF en tema oscuro. Resultado esperado: el PDF sale sobre fondo blanco.
+
+## [Fase 5, parte 1] - Cumplimiento y CI (hallazgos 1, 2, 6 y 7 de la auditoría)
+**Fecha:** 1 de noviembre de 2026
+**Estado:** Código y pruebas escritos; falta la confirmación de GitHub Actions y la aprobación del usuario. No hay migraciones nuevas.
+**Pedido:** seguir con la siguiente fase (backend), empezando por el orden recomendado en la auditoría: cumplimiento y CI.
+### ¿Qué se hizo?
+- **Hallazgo 1 (alta):** "Descargar mis datos" ahora incluye las simulaciones guardadas. `armarExportacion` recibe `simulaciones` y se quitó el campo `escenarios`, que nunca tuvo datos. Si no se puede leer el perfil, los consentimientos o las simulaciones, no se descarga un archivo incompleto: se muestra el error.
+- **Hallazgo 2 (alta):** la política dice ahora qué se guarda de verdad (perfil, tema, simulaciones, hasta 50), qué hace el modo invitado y que los PDF y Excel no salen del navegador. `VERSION_POLITICA` pasó de `2026-10-30` a `2026-11-01`. Nuevo componente `src/ui/AvisoPolitica.tsx`: al iniciar sesión compara las versiones aceptadas con la vigente y, si falta, ofrece "Acepto la nueva versión".
+- **Hallazgo 6 (media):** `db-migrate.yml` y `db-limpieza.yml` llevan `if: github.ref == 'refs/heads/main'`; lanzados desde otra rama, el trabajo se omite.
+- **Hallazgo 7 (media):** el job de pruebas del CI ya no referencia `NEON_DATABASE_URL`, `CLOUDFLARE_API_TOKEN` ni `CLOUDFLARE_ACCOUNT_ID`; solo comprueba las dos URL públicas del build. El despliegue sigue leyendo los secretos de Cloudflare en su propio job.
+### ¿Cómo se hizo? (Explicación técnica)
+- **Re-aceptación sin bloquear.** `AvisoPolitica` llama a `leerConsentimientos()` cuando aparece un correo con sesión y busca la versión vigente. El registro de una cuenta nueva guarda su consentimiento antes de que la app note la sesión, así que un usuario nuevo no ve el aviso. Si la lectura falla, el aviso no aparece: nunca impide usar la app. El consentimiento se guarda con la misma función y la misma tabla de siempre (`consentimiento`, con RLS y restricción de unicidad por versión), así que el reintento es seguro.
+- **Por qué no se bloquea la app.** Exigir la aceptación para seguir usando la cuenta es una decisión legal más estricta; se dejó como aviso con constancia. Si se prefiere bloquear, es un cambio pequeño en `AvisoPolitica`.
+- **Workflows.** `if` a nivel de job: es la forma más simple de que un `workflow_dispatch` desde una rama no toque producción. No se creó una regla de protección del environment `neon` porque eso se configura en la web de GitHub, no en el código (ver "Cómo probar").
+### Pruebas unitarias implementadas
+- `tests/unit/perfil.test.ts`: la exportación incluye las simulaciones y ya no trae `escenarios`.
+- `tests/unit/Perfil.test.tsx`: "Descargar mis datos" entrega las simulaciones; si falla su lectura no descarga.
+- `tests/unit/AvisoPolitica.test.tsx`: aviso con versión anterior, aceptar guarda la versión vigente y lo oculta, error con reintento, versión al día, lectura fallida, invitado, y que la política publicada describe simulaciones, tema y las 24 horas del invitado.
+### ¿Cómo probar esta funcionalidad manualmente?
+1. Con sesión y algunas simulaciones guardadas, ir a "Mi perfil" → "Descargar mis datos". Resultado esperado: el JSON trae `simulaciones` con cada una (nombre, parámetros, fecha).
+2. Con una cuenta creada antes de esta versión, iniciar sesión. Resultado esperado: aparece "Actualizamos la política de datos". Pulsar "Leer la política" y luego "Acepto la nueva versión". Resultado esperado: el aviso desaparece y no vuelve a salir al recargar.
+3. GitHub → Actions → "Migraciones de base de datos" → Run workflow con la rama `develop`. Resultado esperado: el trabajo aparece como omitido (skipped). Con `main`, corre normal.
+4. (Opcional, en la web de GitHub) Settings → Environments → `neon` → "Deployment branches" → "Selected branches" → agregar `main` y `develop`. Así los secretos solo llegan a esas ramas.

@@ -1,4 +1,4 @@
-import { armarExportacion, perfilInicial, validarPerfil, type FormularioPerfil } from '../../src/core';
+import { armarExportacion, perfilInicial, validarPerfil, type FormularioPerfil, type SimulacionGuardada } from '../../src/core';
 
 const VALIDO: FormularioPerfil = {
   nombre: ' Ana Pérez ',
@@ -51,6 +51,7 @@ describe('core/perfil: armarExportacion (HU-05)', () => {
       correo: 'ana@correo.co',
       perfil: perfilInicial('Ana'),
       consentimientos: [{ version: '2026-10-30', aceptadoEn: '2026-10-30T15:00:00Z' }],
+      simulaciones: [],
       generadoEn: new Date('2026-10-31T12:00:00Z'),
     });
     expect(datos).toEqual({
@@ -60,12 +61,41 @@ describe('core/perfil: armarExportacion (HU-05)', () => {
       perfil: perfilInicial('Ana'),
       consentimientos: [{ version: '2026-10-30', aceptadoEn: '2026-10-30T15:00:00Z' }],
       simulaciones: [],
-      escenarios: [],
     });
   });
 
+  it('incluye las simulaciones guardadas con su nombre, parámetros y fecha', () => {
+    const guardada: SimulacionGuardada = {
+      id: 'a',
+      nombre: 'Casa',
+      parametros: {
+        monto: '10.000.000',
+        plazo: '12',
+        frecuenciaPago: 12,
+        tasa: '1,5',
+        tipoTasa: 'efectiva',
+        frecuenciaTasa: 12,
+        sistema: 'frances',
+        graciaPeriodos: '',
+        graciaTipo: 'muerta',
+        escala: 0,
+        abono: null,
+      },
+      actualizadoEn: '2026-11-01T15:00:00.000Z',
+    };
+    const datos = armarExportacion({
+      correo: 'a@b.co',
+      perfil: null,
+      consentimientos: [],
+      simulaciones: [guardada],
+      generadoEn: new Date(0),
+    });
+    expect(datos.simulaciones).toEqual([guardada]);
+    expect(datos).not.toHaveProperty('escenarios');
+  });
+
   it('funciona sin perfil guardado', () => {
-    const datos = armarExportacion({ correo: 'a@b.co', perfil: null, consentimientos: [], generadoEn: new Date(0) });
+    const datos = armarExportacion({ correo: 'a@b.co', perfil: null, consentimientos: [], simulaciones: [], generadoEn: new Date(0) });
     expect(datos.perfil).toBeNull();
   });
 });

@@ -1,7 +1,8 @@
 name: Migraciones de base de datos
 
-# Se ejecuta a mano desde la pestaña Actions ("Run workflow").
+# Se ejecuta a mano desde la pestaña Actions ("Run workflow"), eligiendo la rama main.
 # Aplica en orden los archivos de db/migrations/ sobre la base de Neon.
+# Si se lanza desde otra rama, el trabajo se omite sin tocar la base.
 on:
   workflow_dispatch:
 
@@ -11,6 +12,8 @@ permissions:
 jobs:
   migrar:
     name: Aplicar db/migrations en Neon
+    # Solo desde main: una rama sin revisar no puede tocar la base de producción.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: neon
     steps:

@@ -23,14 +23,25 @@ export function PaginaPolitica() {
         <li>Nombre y correo electrónico, al crear la cuenta.</li>
         <li>Contraseña, que el proveedor de autenticación guarda cifrada con un algoritmo de un solo sentido. Nadie puede leerla.</li>
         <li>Fecha, hora y versión de esta política cuando la aceptas.</li>
-        <li>Más adelante, las simulaciones y preferencias que decidas guardar.</li>
+        <li>
+          Los datos de perfil que decidas guardar: institución, programa, decimales de los montos, días del año para
+          tasas diarias y tema de color (claro, oscuro o el del sistema).
+        </li>
+        <li>
+          Las simulaciones que decidas guardar: su nombre, los datos del crédito que escribiste (monto, plazo, tasa,
+          gracia y abono) y la fecha de la última modificación. Puedes guardar hasta 50.
+        </li>
       </ul>
-      <p>No recogemos datos sensibles ni datos de menores de edad. El modo invitado no guarda ningún dato.</p>
+      <p>
+        No recogemos datos sensibles ni datos de menores de edad. El modo invitado no guarda nada en nuestros
+        servidores ni en tu navegador: sus simulaciones viven solo en la memoria de la pestaña y se borran al cerrarla o
+        a las 24 horas. Los PDF y Excel se generan en tu navegador y no se envían a ningún servidor.
+      </p>
 
       <h2>3. Finalidades</h2>
       <ul>
         <li>Crear y proteger tu cuenta, y verificar que el correo es tuyo.</li>
-        <li>Guardar tu trabajo para que lo abras desde cualquier equipo.</li>
+        <li>Guardar tu perfil, tus preferencias y tus simulaciones para que los abras desde cualquier equipo.</li>
         <li>Enviarte solo los correos necesarios para la cuenta: códigos de verificación y recuperación de contraseña.</li>
       </ul>
       <p>No vendemos ni cedemos tus datos, y no los usamos para publicidad.</p>
@@ -52,6 +63,10 @@ export function PaginaPolitica() {
         <li>Presentar quejas ante la Superintendencia de Industria y Comercio.</li>
         <li>Acceder gratis a tus datos.</li>
       </ul>
+      <p>
+        Desde «Mi perfil» puedes descargar todos tus datos en un archivo (cuenta, perfil, consentimientos y
+        simulaciones) y eliminar tu cuenta, lo que borra todo en cascada.
+      </p>
 
       <h2>6. Cómo ejercerlos</h2>
       <p>

@@ -1,4 +1,5 @@
 import type { ResultadoCuenta, ServicioCuenta, Usuario } from '../../src/adapters/auth/ServicioCuenta';
+import { VERSION_POLITICA } from '../../src/core';
 
 export const OK: ResultadoCuenta = { ok: true };
 
@@ -18,7 +19,7 @@ export function servicioFalso(cambios: Partial<ServicioCuenta> = {}) {
     guardarPerfil: vi.fn(async () => OK),
     leerConsentimientos: vi.fn(async () => ({
       ok: true as const,
-      consentimientos: [{ version: '2026-10-30', aceptadoEn: '2026-10-30T15:00:00Z' }],
+      consentimientos: [{ version: VERSION_POLITICA, aceptadoEn: '2026-11-01T15:00:00Z' }],
     })),
     eliminarCuenta: vi.fn(async () => OK),
     listarSimulaciones: vi.fn<ServicioCuenta['listarSimulaciones']>(async () => ({ ok: true, simulaciones: [] })),

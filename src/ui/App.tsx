@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ServicioCuenta, Usuario } from '../adapters/auth/ServicioCuenta';
+import { AvisoPolitica } from './AvisoPolitica';
 import { Bienvenida } from './Bienvenida';
 import { Enlace, navegar, useRuta } from './navegacion';
 import { SelectorTema } from './SelectorTema';
@@ -182,6 +183,7 @@ export function App({ servicioCuenta = null, bienvenida = false }: Props) {
       </header>
 
       <main id="contenido" className="contenido" tabIndex={-1}>
+        <AvisoPolitica key={`politica-${usuario?.correo ?? 'invitado'}`} servicio={servicioCuenta} usuario={usuario} />
         <OfertaGuardar key={usuario?.correo ?? 'invitado'} servicio={servicioCuenta} usuario={usuario} />
         <Pagina ruta={ruta} servicioCuenta={servicioCuenta} usuario={usuario} alCambiarSesion={actualizarSesion} />
       </main>

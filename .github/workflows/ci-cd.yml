@@ -51,15 +51,14 @@ jobs:
           VITE_NEON_AUTH_URL: ${{ vars.VITE_NEON_AUTH_URL || secrets.VITE_NEON_AUTH_URL }}
           VITE_NEON_DATA_API_URL: ${{ vars.VITE_NEON_DATA_API_URL || secrets.VITE_NEON_DATA_API_URL }}
 
-      - name: Comprobar que el pipeline lee la configuración (sin mostrar valores)
+      # El job de pruebas solo ve las dos URL públicas del build. Las credenciales de la base y de Cloudflare
+      # (secretos) no se leen aquí: solo las usan el job de despliegue y los workflows de base de datos.
+      - name: Comprobar que el build lee la configuración pública (sin mostrar valores)
         env:
           VITE_NEON_AUTH_URL: ${{ vars.VITE_NEON_AUTH_URL || secrets.VITE_NEON_AUTH_URL }}
           VITE_NEON_DATA_API_URL: ${{ vars.VITE_NEON_DATA_API_URL || secrets.VITE_NEON_DATA_API_URL }}
-          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          for nombre in VITE_NEON_AUTH_URL VITE_NEON_DATA_API_URL NEON_DATABASE_URL CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+          for nombre in VITE_NEON_AUTH_URL VITE_NEON_DATA_API_URL; do
             if [ -n "${!nombre}" ]; then echo "OK: $nombre disponible"; else echo "::warning::Falta $nombre en el environment neon"; fi
           done
 
