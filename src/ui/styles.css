@@ -595,3 +595,10 @@ summary {
     scroll-behavior: auto !important;
   }
 }
+
+/* HU-20: cada parte del reparto proporcional */
+.parte {
+  padding: 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}

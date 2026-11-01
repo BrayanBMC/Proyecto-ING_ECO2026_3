@@ -472,3 +472,49 @@ Con 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual:
 2. Pulsar "Exportar a PDF". Resultado esperado: se descarga `amortiza-simulacion-AAAA-MM-DD.pdf` con el encabezado, los parámetros reales (incluida la gracia) y la tabla completa.
 3. Pulsar "Exportar a Excel". Resultado esperado: se descarga el `.xlsx`; al abrirlo en Excel o LibreOffice los montos son números y se pueden sumar.
 4. Con sesión, guardar nombre e institución en el perfil y volver a exportar. Resultado esperado: el encabezado del PDF los muestra.
+
+## [HU-18, HU-19 y HU-20] - Calculadoras: interés compuesto, anualidades y reparto proporcional
+
+**Fecha:** 1 de noviembre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions (ver el resultado del último push a `develop`). No requiere migraciones.
+
+**Historias:**
+
+- HU-18: como estudiante quiero calcular interés compuesto despejando S, P, i o n para resolver ejercicios de valor del dinero en el tiempo.
+- HU-19: como estudiante quiero calcular anualidades anticipadas y vencidas (S, P y cuota A) para comparar ambos tipos de pago.
+- HU-20: como estudiante quiero repartir un monto en forma directa, inversa o compuesta para resolver problemas de razones y proporciones.
+
+### ¿Qué se hizo?
+
+- `src/core/comun.ts`: piezas compartidas: `validarTasaLibre` (acepta 0 %), `leerPositivo`, `cuatroDecimales` y `pasosDeTasa`.
+- `src/core/compuesto.ts` (HU-18): `valorFuturo`, `valorPresente`, `tasaCompuesta`, `periodosCompuesto` y `calcularCompuesto`, que valida el formulario, convierte la tasa y devuelve el resultado con sus pasos.
+- `src/core/anualidades.ts` (HU-19): `factorFuturo`, `factorPresente`, `valorFuturoAnualidad`, `valorPresenteAnualidad`, `cuotaDesdeFuturo`, `cuotaDesdePresente` y `calcularAnualidad`. Siempre devuelve la anualidad vencida y la anticipada.
+- `src/core/reparto.ts` (HU-20): `repartirMayorResiduo` y `calcularReparto` con los tres métodos.
+- `src/ui/CamposTasa.tsx`: los campos de tasa, tipo y capitalización, el selector de periodo y el de decimales, compartidos por las calculadoras.
+- `src/ui/paginas/Compuesto.tsx`, `Anualidades.tsx` y `Reparto.tsx`, con las rutas `/interes-compuesto`, `/anualidades` y `/reparto`. La página de inicio ya enlaza a las tres (se quitó el letrero "En construcción").
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Una sola conversión de tasas (criterio HU-18):** las calculadoras llaman a `calcularTasa`, la misma función del simulador. Una tasa nominal entra como nominal y se convierte con la fórmula compuesta, no con j/m.
+- **Despeje de n (criterio HU-18):** `n = ln(S / P) / ln(1 + i)` con `Decimal.ln` a 34 dígitos. Con P = 1.000.000, S = 2.000.000 e i = 2 % da 35,0028. Si n no es entero se agrega un paso que dice entre qué periodos enteros cae.
+- **Casos que no tienen solución:** con tasa 0 no se puede despejar n, y S menor que P no se acepta al despejar i o n (la calculadora solo trabaja con interés positivo). Cada caso muestra su mensaje, no un error técnico.
+- **Anualidad anticipada = vencida × (1 + i):** las dos comparten el mismo código (`factorFuturo` y `factorPresente`). Con i = 0 los factores valen n, así que S = P = A · n sin dividir por cero (criterio HU-19). Con tasa 0 la cuota es S / n o P / n.
+- **Reparto con suma exacta (criterio HU-20):** cada parte se redondea hacia abajo a la escala (pesos o centavos) y las unidades que sobran, siempre menos que el número de partes, van a las partes con mayor residuo. Los empates se resuelven por orden. En el reparto inverso el peso es 1 / x, y un índice 0 se rechaza en ese índice. En el compuesto es x · y.
+- **Límites:** montos hasta $ 1.000.000.000.000 (igual que el simulador), hasta 1.200 periodos en interés compuesto, de 1 a 360 pagos en anualidades y de 2 a 20 partes en el reparto. Si el resultado supera el máximo se avisa en vez de mostrar un número enorme.
+- **Corrección frente a la propuesta (caso T9):** la propuesta daba P = 5.683.814,15 para la anualidad anticipada de A = 500.000, i = 1 % y n = 12. El valor correcto es **5.683.814,12** (el mismo que da Excel con `=VA(1%;12;-500000;0;1)`). Se comprobó por dos caminos: A · [1 − 1,01^−12] / 0,01 · 1,01, y S / 1,01^12 con S = 6.404.664,02. S sí coincide con la propuesta. Es una errata parecida a la de la cuota de T3.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/compuesto.test.ts`: T10 (n = 35,0028 y el paso fraccionario), nominal 24 % NMV = 2 % mensual igual que `calcularTasa`, despeje de P y de i (con y sin paso de EA), S = P con n = 0, tasa 0, todos los errores de validación y el límite del resultado, más las utilidades comunes.
+- `tests/unit/anualidades.test.ts`: T9 (S = 6.404.664,02 y P = 5.683.814,12 anticipadas, S vencida = 6.341.251,51), anticipada = vencida × (1 + i), la cuota deshace S y P, i = 0, los tres objetivos con y sin interés, tasa nominal, validaciones y el límite del resultado.
+- `tests/unit/reparto.test.ts`: T11 (333.334; 333.333; 333.333), centavos, empates y mayor residuo, índice 0 en directo, inverso con pesos que no terminan, compuesto, errores por índice, monto y número de partes, y la propiedad Σ partes = M (200 casos, métodos directo e inverso, 0 y 2 decimales).
+- `tests/unit/Calculadoras.test.tsx`: los criterios de las tres HU en pantalla, las rutas y los enlaces del inicio.
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+1. Entrar a "Interés compuesto". Elegir "Calcular los periodos (n)", P = 1.000.000, S = 2.000.000, tasa 2 efectiva con periodo mensual. Resultado esperado: "35,0028 periodos" y, en "¿Cómo se calculó?", el paso fraccionario entre 35 y 36.
+2. Elegir "Calcular el valor futuro (S)", P = 1.000.000, n = 12, tasa 24 nominal vencida con capitalización mensual. Resultado esperado: S = $ 1.268.242, tasa por mes 2,0000 % y EA 26,8242 %.
+3. Entrar a "Anualidades". A = 500.000, n = 12, tasa 1 efectiva mensual, con 2 decimales. Resultado esperado: anticipada con S = $ 6.404.664,02 y P = $ 5.683.814,12; vencida con S = $ 6.341.251,51. Con tasa 0, S y P valen $ 6.000.000 en ambas.
+4. Entrar a "Reparto proporcional". Monto 1.000.000 e índice 1 en las tres partes. Resultado esperado: $ 333.334, $ 333.333 y $ 333.333, con la suma exacta de $ 1.000.000.
+5. En el mismo reparto elegir "Inverso" y poner el índice 0 en la parte 1. Resultado esperado: el error aparece bajo ese índice y no se calcula nada.

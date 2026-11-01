@@ -34,6 +34,9 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-15 | Alerta de usura | Compara la EA del crédito con la usura (1,5 × IBC certificado). Si el dato del mes venció, avisa y deja escribir el IBC a mano. El IBC se actualiza cada mes en `src/core/usura.ts`. |
 | HU-16 | ¿Cómo se calculó? | Paneles con cada paso del cálculo de la tasa, la cuota y la usura: la fórmula, la fórmula con los valores del crédito y el resultado. Cada paso se recorre con Tab y lo lee el lector de pantalla. |
 | HU-17 | Exportar a PDF y Excel | Botones que descargan la simulación como PDF (pdfmake) y Excel (write-excel-file) reales, generados en el navegador, con los parámetros reales, el perfil en el encabezado y los montos sumables en Excel. Funciona también como invitado. |
+| HU-18 | Interés compuesto | Calculadora en `/interes-compuesto` que despeja el valor futuro (S), el valor presente (P), la tasa (i) o los periodos (n). La tasa nominal se convierte con la misma fórmula del simulador. Un resultado fraccionario de n (por ejemplo 35,0028) se muestra así, con explicación. |
+| HU-19 | Anualidades | Calculadora en `/anualidades` que, con la cuota A, calcula S y P; o, con una meta S o un valor presente P, calcula la cuota. Muestra los pagos vencidos y anticipados lado a lado. Con tasa 0 da S = P = A · n sin error. |
+| HU-20 | Reparto proporcional | Calculadora en `/reparto` que reparte un monto entre 2 y 20 partes de forma directa, inversa o compuesta. Usa el método del mayor residuo, así que la suma de las partes es exactamente el monto. |
 
 ## 1. Requisitos previos
 
