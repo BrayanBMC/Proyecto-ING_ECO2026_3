@@ -182,6 +182,34 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
         return {};
       }),
 
+    // Tema de color (migración 005). Leer nunca falla: sin perfil o sin la columna, la app usa el tema del sistema.
+    leerTema: async () => {
+      try {
+        const { data, error } = await cliente.from('perfil').select('tema').maybeSingle();
+        const tema = error ? null : (data as { tema?: unknown } | null)?.tema;
+        return tema === 'sistema' || tema === 'claro' || tema === 'oscuro' ? tema : null;
+      } catch {
+        return null;
+      }
+    },
+
+    guardarTema: (tema) =>
+      capturar(async () => {
+        const usuario = (await cliente.auth.getSession()).data?.user;
+        if (!usuario) {
+          return { error: { code: 'SIN_SESION' } };
+        }
+        // Primero se intenta cambiar el tema del perfil existente, sin tocar nombre ni institución.
+        const cambio = await cliente.from('perfil').update({ tema }).eq('usuario_id', usuario.id).select('usuario_id');
+        if (cambio.error || (cambio.data ?? []).length > 0) {
+          return cambio;
+        }
+        // Todavía no hay perfil: se crea uno mínimo con el nombre de la cuenta.
+        return await cliente
+          .from('perfil')
+          .insert({ usuario_id: usuario.id, nombre_mostrar: (usuario.name || 'Usuario').slice(0, 60), tema });
+      }),
+
     // HU-21: usuario_id lo pone la base de datos y la política RLS solo deja ver y tocar las filas propias.
     listarSimulaciones: async () => {
       try {

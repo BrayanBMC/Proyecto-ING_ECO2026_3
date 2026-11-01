@@ -9,6 +9,7 @@ import {
 } from '../../core';
 import type { ServicioCuenta, Usuario } from '../../adapters/auth/ServicioCuenta';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { descargarJson } from '../descargar';
 import { Enlace, navegar } from '../navegacion';
 
@@ -145,6 +146,7 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
               valor={formulario.nombre}
               alCambiar={(v) => cambiar('nombre', v)}
               error={errores.nombre}
+              termino="perfilNombre"
             />
             <Campo
               nombre="institucion"
@@ -153,6 +155,7 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
               valor={formulario.institucion}
               alCambiar={(v) => cambiar('institucion', v)}
               error={errores.institucion}
+              termino="perfilInstitucion"
             />
             <Campo
               nombre="programa"
@@ -160,9 +163,12 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
               valor={formulario.programa}
               alCambiar={(v) => cambiar('programa', v)}
               error={errores.programa}
+              termino="perfilPrograma"
             />
             <fieldset className="opciones">
-              <legend>Decimales en los montos</legend>
+              <legend>
+                Decimales en los montos <Ayuda id="decimales" />
+              </legend>
               <label>
                 <input
                   type="radio"
@@ -183,7 +189,9 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
               </label>
             </fieldset>
             <fieldset className="opciones">
-              <legend>Días del año para tasas diarias</legend>
+              <legend>
+                Días del año para tasas diarias <Ayuda id="baseDiaria" />
+              </legend>
               <label>
                 <input
                   type="radio"
@@ -235,6 +243,7 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
             autoComplete="current-password"
             valor={contrasena}
             alCambiar={setContrasena}
+            termino="confirmarContrasena"
           />
           {alertaEliminar && (
             <p role="alert" className="alerta">

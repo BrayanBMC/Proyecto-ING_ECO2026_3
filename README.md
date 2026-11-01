@@ -42,6 +42,14 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-23 | Comparar simulaciones | En "Mis simulaciones" se eligen de 2 a 3 y "Comparar seleccionadas" las muestra en columnas: primera cuota, EA, total de intereses, total pagado y ρ (intereses por cada peso prestado). La de menos intereses queda resaltada. El invitado compara las de su sesión. |
 | HU-24 | Compartir por enlace | "Copiar enlace" arma una URL con los parámetros en el hash (`#c=…`), que el navegador no envía al servidor. Quien la abra ve la misma tabla sin cuenta. Si el enlace está alterado o fuera de rango, muestra el error y no calcula. |
 
+### Mejoras de experiencia
+
+| Mejora | Qué se hizo |
+|---|---|
+| Tema claro y oscuro | Los botones "Sistema / Claro / Oscuro" de la cabecera cambian la apariencia al instante. "Sistema" sigue la preferencia del dispositivo. Con sesión, la elección se guarda en el perfil (columna `tema`, migración `005`) y se aplica sola en otro equipo; como invitado dura hasta recargar la página (no se guarda nada en el navegador). Los dos temas cumplen WCAG 2.2 AA (contraste de texto 4,5:1, de bordes de controles 3:1, objetivos de 44 px). Los PDF y Excel siempre salen sobre blanco. |
+| Ayuda contextual `?` | Junto a cada campo, grupo de opciones y resultado hay un botón `?` con una explicación corta (aparece con el mouse, con el foco del teclado o con un toque) y "Saber más", que abre un cuadro con ejemplo, rango permitido y el error más común. Todos los textos están en `src/ui/ayuda/glosario.ts`, y los rangos salen de las mismas constantes que usa la validación. Una prueba falla si un campo no tiene su entrada. |
+| Ventana de bienvenida | Al cargar la app se abre una ventana con el título del proyecto, el autor, la universidad, la carrera y el semestre, el aviso de que los cálculos son educativos y enlaces a la política de datos y al simulador. **Reaparece cada vez que se recarga la página**: su estado vive solo en memoria porque la app no guarda nada en el navegador. Se cierra con "Entendido" o con Esc. |
+
 ## 1. Requisitos previos
 
 | Herramienta | Versión | Para qué |
@@ -129,6 +137,7 @@ El workflow `.github/workflows/db-migrate.yml` ("Migraciones de base de datos") 
 | `002_perfil_y_eliminar_cuenta.sql` | HU-04, HU-05 | Tabla `perfil` con RLS y la función `eliminar_mi_cuenta()`, que borra solo la cuenta de quien la llama |
 | `003_simulaciones.sql` | HU-21 | Tabla `simulacion` (nombre y parámetros del crédito) con RLS por usuario y un tope de 50 por usuario con un trigger |
 | `004_limite_global.sql` | HU-21 | Reemplaza el trigger para agregar un tope global de 50.000 simulaciones guardadas (ver "Límites del plan gratuito de Neon") |
+| `005_tema.sql` | Mejoras | Agrega la columna `tema` ('sistema', 'claro' u 'oscuro') a `perfil`, con valor por defecto 'sistema' |
 
 ### Límites del plan gratuito de Neon
 
@@ -152,6 +161,7 @@ El Worker no debe tener conectada la integración Git de Cloudflare (Settings �
 src/core/        Motor financiero y reglas de validación puras (sin UI, red ni almacenamiento)
 src/adapters/    Conexión con servicios externos (auth/: cuentas con Neon)
 src/ui/          Componentes React, páginas, enrutador y estilos
+src/ui/ayuda/    Botón «?» y glosario único de la ayuda contextual
 db/migrations/   SQL de la base de datos en Neon (tablas y políticas RLS)
 db/mantenimiento/ SQL de la limpieza diaria de la base de datos
 tests/unit/      Pruebas unitarias (Vitest)

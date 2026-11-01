@@ -10,6 +10,7 @@ import {
   type ResultadoCompuesto,
 } from '../../core';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { CamposTasa, SelectorEscala, SelectorFrecuencia } from '../CamposTasa';
 import { pesos, porcentaje } from '../formato';
 import { Pasos } from '../Pasos';
@@ -65,7 +66,9 @@ export function PaginaCompuesto() {
         <p className="tarjeta__texto">Elige qué quieres despejar y escribe los demás datos. Usa S = P · (1 + i)^n.</p>
         <form className="formulario formulario--rejilla" onSubmit={calcular} noValidate>
           <fieldset className="opciones">
-            <legend>¿Qué quieres calcular?</legend>
+            <legend>
+              ¿Qué quieres calcular? <Ayuda id="incognita" />
+            </legend>
             {OPCIONES.map((o) => (
               <label key={o.valor}>
                 <input
@@ -90,6 +93,7 @@ export function PaginaCompuesto() {
               valor={f.p}
               alCambiar={(v) => cambiar('p', v)}
               error={errores.p}
+              termino="capitalInicial"
             />
           )}
           {f.incognita !== 'S' && (
@@ -101,6 +105,7 @@ export function PaginaCompuesto() {
               valor={f.s}
               alCambiar={(v) => cambiar('s', v)}
               error={errores.s}
+              termino="montoFinal"
             />
           )}
           {f.incognita !== 'n' && (
@@ -113,6 +118,7 @@ export function PaginaCompuesto() {
               alCambiar={(v) => cambiar('n', v)}
               error={errores.n}
               ayuda="Puede tener decimales, por ejemplo 2,5."
+              termino="periodos"
             />
           )}
           <SelectorFrecuencia
@@ -120,6 +126,7 @@ export function PaginaCompuesto() {
             etiqueta="Duración de cada periodo"
             valor={f.frecuenciaPeriodo}
             alCambiar={(v) => cambiar('frecuenciaPeriodo', v)}
+            termino="duracionPeriodo"
           />
           {f.incognita !== 'i' && (
             <CamposTasa
@@ -156,33 +163,45 @@ export function PaginaCompuesto() {
           <dl className="cifras">
             {resultado.incognita === 'S' && (
               <div>
-                <dt>Valor futuro (S)</dt>
+                <dt>
+                  Valor futuro (S) <Ayuda id="valorFuturo" />
+                </dt>
                 <dd>{pesos(resultado.valor, escala)}</dd>
               </div>
             )}
             {resultado.incognita === 'P' && (
               <div>
-                <dt>Valor presente (P)</dt>
+                <dt>
+                  Valor presente (P) <Ayuda id="valorPresente" />
+                </dt>
                 <dd>{pesos(resultado.valor, escala)}</dd>
               </div>
             )}
             {resultado.incognita === 'n' && (
               <div>
-                <dt>Periodos necesarios</dt>
+                <dt>
+                  Periodos necesarios <Ayuda id="periodosNecesarios" />
+                </dt>
                 <dd>{cuatroDecimales(resultado.valor)} periodos</dd>
               </div>
             )}
             <div>
-              <dt>Tasa por {periodo}</dt>
+              <dt>
+                Tasa por {periodo} <Ayuda id="tasaPeriodica" />
+              </dt>
               <dd>{porcentaje(resultado.tasaPeriodica, 4)}</dd>
             </div>
             <div>
-              <dt>Efectiva anual (EA)</dt>
+              <dt>
+                Efectiva anual (EA) <Ayuda id="ea" />
+              </dt>
               <dd>{porcentaje(resultado.ea, 4)}</dd>
             </div>
             {resultado.incognita === 'i' && (
               <div>
-                <dt>Nominal anual</dt>
+                <dt>
+                  Nominal anual <Ayuda id="nominalAnual" />
+                </dt>
                 <dd>{porcentaje(resultado.nominal, 4)}</dd>
               </div>
             )}

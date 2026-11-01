@@ -20,6 +20,6 @@ if (!raiz) {
 
 createRoot(raiz).render(
   <StrictMode>
-    <App servicioCuenta={servicioCuenta} />
+    <App servicioCuenta={servicioCuenta} bienvenida />
   </StrictMode>,
 );

@@ -11,6 +11,7 @@ import {
   type ResultadoReparto,
 } from '../../core';
 import { Campo } from '../Campo';
+import { Ayuda } from '../ayuda/Ayuda';
 import { SelectorEscala } from '../CamposTasa';
 import { pesos } from '../formato';
 import { Pasos } from '../Pasos';
@@ -73,9 +74,12 @@ export function PaginaReparto() {
                 limpiar();
               }}
               error={errores?.monto}
+              termino="repartoMonto"
             />
             <fieldset className="opciones">
-              <legend>Método de reparto</legend>
+              <legend>
+                Método de reparto <Ayuda id="repartoMetodo" />
+              </legend>
               {METODOS.map((m) => (
                 <label key={m.valor}>
                   <input
@@ -109,6 +113,7 @@ export function PaginaReparto() {
                 placeholder={`Parte ${k + 1}`}
                 valor={fila.nombre}
                 alCambiar={(v) => cambiarFila(k, 'nombre', v)}
+                termino="repartoNombre"
               />
               <Campo
                 nombre={`parte-${k}-x`}
@@ -118,6 +123,7 @@ export function PaginaReparto() {
                 valor={fila.x}
                 alCambiar={(v) => cambiarFila(k, 'x', v)}
                 error={errores?.filas[k]?.x}
+                termino="repartoIndice"
               />
               {metodo === 'compuesto' && (
                 <Campo
@@ -128,6 +134,7 @@ export function PaginaReparto() {
                   valor={fila.y}
                   alCambiar={(v) => cambiarFila(k, 'y', v)}
                   error={errores?.filas[k]?.y}
+                  termino="repartoIndice2"
                 />
               )}
               {filas.length > MIN_PARTES && (

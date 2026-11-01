@@ -34,6 +34,7 @@ import {
 import type { ServicioCuenta, Usuario } from '../../adapters/auth/ServicioCuenta';
 import { PREFIJO_HASH, decodificarEnlace } from '../../adapters/share/url';
 import { Campo } from '../Campo';
+import { Ayuda, EtiquetaAyuda } from '../ayuda/Ayuda';
 import { descargarBlob } from '../descargar';
 import { pesos, porcentaje } from '../formato';
 import { Pasos } from '../Pasos';
@@ -89,15 +90,21 @@ function ComparacionGracias({ r, escala }: { r: Resultado; escala: EscalaMonetar
       <h2 id="titulo-gracias">Costo de la gracia ({r.gracia.periodos} periodos)</h2>
       <dl className="cifras">
         <div>
-          <dt>Intereses con gracia muerta</dt>
+          <dt>
+            Intereses con gracia muerta <Ayuda id="graciaMuerta" />
+          </dt>
           <dd>{pesos(muerta, escala)}</dd>
         </div>
         <div>
-          <dt>Intereses pagando intereses en la gracia</dt>
+          <dt>
+            Intereses pagando intereses en la gracia <Ayuda id="graciaIntereses" />
+          </dt>
           <dd>{pesos(conIntereses, escala)}</dd>
         </div>
         <div>
-          <dt>Diferencia</dt>
+          <dt>
+            Diferencia <Ayuda id="diferenciaGracia" />
+          </dt>
           <dd>{pesos(diferencia, escala)}</dd>
         </div>
       </dl>
@@ -151,14 +158,17 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
             </tbody>
           </table>
         </div>
-        <p className="comparar-delta">
-          Sobrecosto del Francés (Δ):{' '}
-          <strong>
-            {sobrecosto
-              ? `${porcentaje(sobrecosto, 2)} más de intereses que el Alemán`
-              : 'no aplica (sin intereses)'}
-          </strong>
-        </p>
+        <div className="titulo-ayuda">
+          <p className="comparar-delta">
+            Sobrecosto del Francés (Δ):{' '}
+            <strong>
+              {sobrecosto
+                ? `${porcentaje(sobrecosto, 2)} más de intereses que el Alemán`
+                : 'no aplica (sin intereses)'}
+            </strong>
+          </p>
+          <Ayuda id="delta" />
+        </div>
         <p className="tarjeta__texto">
           El Alemán abona más capital al comienzo, así que el saldo baja más rápido y se pagan menos intereses. El
           Francés tiene una cuota fija y más baja al inicio.
@@ -423,6 +433,7 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             alCambiar={(v) => cambiar('monto', v)}
             onBlur={() => revisar('monto')}
             error={errores.monto}
+            termino="monto"
           />
           <Campo
             nombre="plazo"
@@ -434,9 +445,12 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             onBlur={() => revisar('plazo')}
             error={errores.plazo}
             ayuda="Entre 1 y 360."
+            termino="plazo"
           />
           <div className="campo">
-            <label htmlFor="frecuenciaPago">Frecuencia de pago</label>
+            <EtiquetaAyuda htmlFor="frecuenciaPago" termino="frecuenciaPago">
+              Frecuencia de pago
+            </EtiquetaAyuda>
             <select
               id="frecuenciaPago"
               value={f.frecuenciaPago}
@@ -459,9 +473,12 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             onBlur={() => revisar('tasa')}
             error={errores.tasa}
             ayuda="Usa coma para decimales, por ejemplo 1,5."
+            termino="tasa"
           />
           <div className="campo">
-            <label htmlFor="tipoTasa">Tipo de tasa</label>
+            <EtiquetaAyuda htmlFor="tipoTasa" termino="tipoTasa">
+              Tipo de tasa
+            </EtiquetaAyuda>
             <select id="tipoTasa" value={f.tipoTasa} onChange={(e) => cambiar('tipoTasa', e.target.value as TipoTasa)}>
               {TIPOS.map((t) => (
                 <option key={t.valor} value={t.valor}>
@@ -471,9 +488,9 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             </select>
           </div>
           <div className="campo">
-            <label htmlFor="frecuenciaTasa">
+            <EtiquetaAyuda htmlFor="frecuenciaTasa" termino="capitalizacion">
               {f.tipoTasa === 'efectiva' ? 'Periodo de la tasa' : 'Capitalización de la tasa'}
-            </label>
+            </EtiquetaAyuda>
             <select
               id="frecuenciaTasa"
               value={f.frecuenciaTasa}
@@ -502,9 +519,12 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             }}
             error={errorGracia}
             ayuda="Entre 0 y 60. Se suman a las cuotas."
+            termino="graciaPeriodos"
           />
           <div className="campo">
-            <label htmlFor="tipoGracia">Tipo de gracia</label>
+            <EtiquetaAyuda htmlFor="tipoGracia" termino="graciaTipo">
+              Tipo de gracia
+            </EtiquetaAyuda>
             <select
               id="tipoGracia"
               value={tipoGracia}
@@ -518,7 +538,9 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             </select>
           </div>
           <fieldset className="opciones">
-            <legend>Sistema de amortización</legend>
+            <legend>
+              Sistema de amortización <Ayuda id="sistema" />
+            </legend>
             <label>
               <input
                 type="radio"
@@ -539,7 +561,9 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             </label>
           </fieldset>
           <fieldset className="opciones">
-            <legend>Decimales en los montos</legend>
+            <legend>
+              Decimales en los montos <Ayuda id="decimales" />
+            </legend>
             <label>
               <input type="radio" name="escala" checked={escala === 0} onChange={() => cambiarEscala(0)} /> Sin
               decimales
@@ -561,17 +585,23 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
             <h2 id="titulo-tasa">Tasa que se aplica</h2>
             <dl className="cifras">
               <div>
-                <dt>Tasa ingresada</dt>
+                <dt>
+                  Tasa ingresada <Ayuda id="tasaIngresada" />
+                </dt>
                 <dd>
                   {porcentaje(resultado.simulacion.tasa)} {sigla(resultado.simulacion.tipoTasa, resultado.simulacion.frecuenciaTasa)}
                 </dd>
               </div>
               <div>
-                <dt>Efectiva anual (EA)</dt>
+                <dt>
+                  Efectiva anual (EA) <Ayuda id="ea" />
+                </dt>
                 <dd>{porcentaje(resultado.tasa.ea)}</dd>
               </div>
               <div>
-                <dt>Tasa por {nombreFrecuencia(resultado.simulacion.frecuenciaPago).periodo}</dt>
+                <dt>
+                  Tasa por {nombreFrecuencia(resultado.simulacion.frecuenciaPago).periodo} <Ayuda id="tasaPeriodica" />
+                </dt>
                 <dd>{porcentaje(resultado.tasa.periodica)}</dd>
               </div>
             </dl>
@@ -602,20 +632,29 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
           />
 
           <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-tabla">
-            <h2 id="titulo-tabla">
-              Tabla de amortización · {resultado.simulacion.sistema === 'frances' ? 'Francés' : 'Alemán'}
-            </h2>
+            <div className="titulo-ayuda">
+              <h2 id="titulo-tabla">
+                Tabla de amortización · {resultado.simulacion.sistema === 'frances' ? 'Francés' : 'Alemán'}
+              </h2>
+              <Ayuda id="tablaAmortizacion" />
+            </div>
             <dl className="cifras">
               <div>
-                <dt>Primera cuota</dt>
+                <dt>
+                  Primera cuota <Ayuda id="cuota" />
+                </dt>
                 <dd>{pesos(primeraCuota!, escala)}</dd>
               </div>
               <div>
-                <dt>Total de intereses</dt>
+                <dt>
+                  Total de intereses <Ayuda id="interesesTotales" />
+                </dt>
                 <dd>{pesos(tabla!.totalIntereses, escala)}</dd>
               </div>
               <div>
-                <dt>Total pagado</dt>
+                <dt>
+                  Total pagado <Ayuda id="totalPagado" />
+                </dt>
                 <dd>{pesos(tabla!.totalPagado, escala)}</dd>
               </div>
             </dl>
