@@ -166,9 +166,11 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
 /** HU-17: exporta la simulación que se ve en pantalla a PDF y a Excel reales. */
 function BotonesExportar({ datos }: { datos: DatosReporte }) {
   const [estado, setEstado] = useState<'listo' | 'generando' | 'error'>('listo');
+  const [detalle, setDetalle] = useState('');
 
   const exportar = async (formato: 'pdf' | 'xlsx') => {
     setEstado('generando');
+    setDetalle('');
     try {
       const reporte = armarReporte(datos, (monto) => pesos(monto, datos.escala));
       if (formato === 'pdf') {
@@ -179,7 +181,9 @@ function BotonesExportar({ datos }: { datos: DatosReporte }) {
         descargarBlob(`${reporte.nombreArchivo}.xlsx`, await exportarXlsx(reporte, datos.escala));
       }
       setEstado('listo');
-    } catch {
+    } catch (error) {
+      console.error('Error al exportar', error);
+      setDetalle(error instanceof Error ? error.message : String(error));
       setEstado('error');
     }
   };
@@ -202,6 +206,7 @@ function BotonesExportar({ datos }: { datos: DatosReporte }) {
       {estado === 'error' && (
         <p role="alert" className="alerta">
           No pudimos generar el archivo. Inténtalo de nuevo.
+          {detalle && <small> (Detalle técnico: {detalle})</small>}
         </p>
       )}
     </div>
