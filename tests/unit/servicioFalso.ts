@@ -21,6 +21,13 @@ export function servicioFalso(cambios: Partial<ServicioCuenta> = {}) {
       consentimientos: [{ version: '2026-10-30', aceptadoEn: '2026-10-30T15:00:00Z' }],
     })),
     eliminarCuenta: vi.fn(async () => OK),
+    listarSimulaciones: vi.fn<ServicioCuenta['listarSimulaciones']>(async () => ({ ok: true, simulaciones: [] })),
+    guardarSimulacion: vi.fn<ServicioCuenta['guardarSimulacion']>(async (nombre, parametros) => ({
+      ok: true,
+      simulacion: { id: 'nueva', nombre, parametros, actualizadoEn: '2026-11-01T12:00:00.000Z' },
+    })),
+    renombrarSimulacion: vi.fn<ServicioCuenta['renombrarSimulacion']>(async () => OK),
+    borrarSimulacion: vi.fn<ServicioCuenta['borrarSimulacion']>(async () => OK),
     ...cambios,
   } satisfies ServicioCuenta;
 }

@@ -96,6 +96,18 @@ export type {
   ParteReparto,
   ResultadoReparto,
 } from './reparto';
+export {
+  LIMITE_GUARDADAS,
+  MAX_COMPARAR,
+  LONGITUD_MAXIMA_NOMBRE_SIMULACION,
+  leerParametros,
+  calcularCredito,
+  resumirCredito,
+  indiceMenorCosto,
+  validarNombreSimulacion,
+  nombreAutomatico,
+} from './guardado';
+export type { ParametrosCredito, SimulacionGuardada, CreditoCalculado, ResumenCredito } from './guardado';
 export { armarReporte } from './reporte';
 export type { DatosReporte, ReporteArmado } from './reporte';
 export { LONGITUD_MAXIMA_INSTITUCION, perfilInicial, esquemaPerfil, validarPerfil, armarExportacion } from './perfil';

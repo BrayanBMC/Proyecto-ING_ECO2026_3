@@ -37,6 +37,10 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-18 | Interés compuesto | Calculadora en `/interes-compuesto` que despeja el valor futuro (S), el valor presente (P), la tasa (i) o los periodos (n). La tasa nominal se convierte con la misma fórmula del simulador. Un resultado fraccionario de n (por ejemplo 35,0028) se muestra así, con explicación. |
 | HU-19 | Anualidades | Calculadora en `/anualidades` que, con la cuota A, calcula S y P; o, con una meta S o un valor presente P, calcula la cuota. Muestra los pagos vencidos y anticipados lado a lado. Con tasa 0 da S = P = A · n sin error. |
 | HU-20 | Reparto proporcional | Calculadora en `/reparto` que reparte un monto entre 2 y 20 partes de forma directa, inversa o compuesta. Usa el método del mayor residuo, así que la suma de las partes es exactamente el monto. |
+| HU-21 | Mis simulaciones | En `/simulaciones`: guardar la simulación (botón "Guardar simulación" bajo la tabla), verla en la lista ordenada por fecha, abrirla (regenera la misma tabla), renombrarla y borrarla con confirmación. Con sesión se guarda en Neon, aislada por usuario con RLS (hasta 50). Como invitado se guarda solo en la memoria de la pestaña. |
+| HU-22 | Llevar la simulación a mi cuenta | Si un invitado tiene una simulación abierta y inicia sesión o se registra, se le ofrece "Guardar esta simulación en mi cuenta". Si dice "No guardar", no se guarda nada. |
+| HU-23 | Comparar simulaciones | En "Mis simulaciones" se eligen de 2 a 3 y "Comparar seleccionadas" las muestra en columnas: primera cuota, EA, total de intereses, total pagado y ρ (intereses por cada peso prestado). La de menos intereses queda resaltada. El invitado compara las de su sesión. |
+| HU-24 | Compartir por enlace | "Copiar enlace" arma una URL con los parámetros en el hash (`#c=…`), que el navegador no envía al servidor. Quien la abra ve la misma tabla sin cuenta. Si el enlace está alterado o fuera de rango, muestra el error y no calcula. |
 
 ## 1. Requisitos previos
 
@@ -123,6 +127,7 @@ El workflow `.github/workflows/db-migrate.yml` ("Migraciones de base de datos") 
 |---|---|---|
 | `001_consentimiento.sql` | HU-01 | Tabla `consentimiento` con RLS: cada usuario solo lee e inserta sus filas, y nadie las modifica |
 | `002_perfil_y_eliminar_cuenta.sql` | HU-04, HU-05 | Tabla `perfil` con RLS y la función `eliminar_mi_cuenta()`, que borra solo la cuenta de quien la llama |
+| `003_simulaciones.sql` | HU-21 | Tabla `simulacion` (nombre y parámetros del crédito) con RLS por usuario y un tope de 50 por usuario con un trigger |
 
 El Worker no debe tener conectada la integración Git de Cloudflare (Settings → Build): esa integración publica sin correr las pruebas. Solo despliega GitHub Actions.
 

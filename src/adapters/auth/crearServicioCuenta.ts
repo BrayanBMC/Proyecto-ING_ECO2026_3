@@ -27,5 +27,9 @@ export function crearServicioCuenta(urlAuth: string | undefined, urlDataApi: str
     guardarPerfil: async (perfil) => (await obtener()).guardarPerfil(perfil),
     leerConsentimientos: async () => (await obtener()).leerConsentimientos(),
     eliminarCuenta: async (correo, contrasena) => (await obtener()).eliminarCuenta(correo, contrasena),
+    listarSimulaciones: async () => (await obtener()).listarSimulaciones(),
+    guardarSimulacion: async (nombre, parametros) => (await obtener()).guardarSimulacion(nombre, parametros),
+    renombrarSimulacion: async (id, nombre) => (await obtener()).renombrarSimulacion(id, nombre),
+    borrarSimulacion: async (id) => (await obtener()).borrarSimulacion(id),
   };
 }

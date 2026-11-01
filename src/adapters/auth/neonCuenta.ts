@@ -1,5 +1,5 @@
 import { createClient } from '@neondatabase/neon-js';
-import type { Perfil } from '../../core';
+import { leerParametros, type Perfil, type SimulacionGuardada } from '../../core';
 import { mensajeDeError, type ErrorServicio } from './mensajes';
 import type { DatosNuevaCuenta, ResultadoCuenta, ServicioCuenta } from './ServicioCuenta';
 
@@ -45,6 +45,23 @@ function aFila(perfil: Perfil) {
     base_diaria: perfil.baseDiaria,
     actualizado_en: new Date().toISOString(),
   };
+}
+
+interface FilaSimulacion {
+  id: string;
+  nombre: string;
+  parametros: unknown;
+  actualizado_en: string;
+}
+
+const COLUMNAS_SIMULACION = 'id, nombre, parametros, actualizado_en';
+
+/** Una fila cuyos parámetros no pasan la validación de forma se descarta: no se podría abrir. */
+function deFilaSimulacion(fila: FilaSimulacion): SimulacionGuardada | null {
+  const parametros = leerParametros(fila.parametros);
+  return parametros.ok
+    ? { id: fila.id, nombre: fila.nombre, parametros: parametros.datos, actualizadoEn: fila.actualizado_en }
+    : null;
 }
 
 async function capturar(operacion: () => Promise<RespuestaSdk>): Promise<ResultadoCuenta> {
@@ -164,5 +181,48 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
         await cliente.auth.signOut();
         return {};
       }),
+
+    // HU-21: usuario_id lo pone la base de datos y la política RLS solo deja ver y tocar las filas propias.
+    listarSimulaciones: async () => {
+      try {
+        const { data, error } = await cliente
+          .from('simulacion')
+          .select(COLUMNAS_SIMULACION)
+          .order('actualizado_en', { ascending: false });
+        if (error) {
+          return { ok: false, mensaje: mensajeDeError(error) };
+        }
+        const simulaciones = ((data ?? []) as FilaSimulacion[])
+          .map(deFilaSimulacion)
+          .filter((s): s is SimulacionGuardada => s !== null);
+        return { ok: true, simulaciones };
+      } catch {
+        return { ok: false, mensaje: mensajeDeError(null) };
+      }
+    },
+
+    guardarSimulacion: async (nombre, parametros) => {
+      try {
+        const { data, error } = await cliente
+          .from('simulacion')
+          .insert({ nombre, parametros })
+          .select(COLUMNAS_SIMULACION)
+          .single();
+        if (error) {
+          return { ok: false, mensaje: mensajeDeError(error) };
+        }
+        const simulacion = deFilaSimulacion(data as FilaSimulacion);
+        return simulacion ? { ok: true, simulacion } : { ok: false, mensaje: mensajeDeError(null) };
+      } catch {
+        return { ok: false, mensaje: mensajeDeError(null) };
+      }
+    },
+
+    renombrarSimulacion: (id: string, nombre: string) =>
+      capturar(async () =>
+        await cliente.from('simulacion').update({ nombre, actualizado_en: new Date().toISOString() }).eq('id', id),
+      ),
+
+    borrarSimulacion: (id: string) => capturar(async () => await cliente.from('simulacion').delete().eq('id', id)),
   };
 }

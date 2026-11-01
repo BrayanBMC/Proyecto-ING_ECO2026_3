@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   FRECUENCIAS,
+  calcularCredito,
   calcularTasa,
   compararGracias,
   armarReporte,
@@ -16,6 +17,7 @@ import {
   validarGracia,
   type AbonoExtra,
   type Comparacion,
+  type CreditoCalculado,
   type DatosReporte,
   type Gracia,
   type TipoGracia,
@@ -23,17 +25,21 @@ import {
   type EscalaMonetaria,
   type Frecuencia,
   type FormularioSimulacion,
+  type ParametrosCredito,
   type ResultadoTasa,
   type Simulacion,
   type Tabla,
   type TipoTasa,
 } from '../../core';
 import type { ServicioCuenta, Usuario } from '../../adapters/auth/ServicioCuenta';
+import { PREFIJO_HASH, decodificarEnlace } from '../../adapters/share/url';
 import { Campo } from '../Campo';
 import { descargarBlob } from '../descargar';
 import { pesos, porcentaje } from '../formato';
 import { Pasos } from '../Pasos';
+import { fijarSimulacionPendiente } from '../sesionInvitado';
 import { FormularioAbono } from './Abono';
+import { GuardarCompartir } from './GuardarCompartir';
 import { TarjetaUsura } from './Usura';
 
 interface Props {
@@ -221,16 +227,61 @@ function sigla(tipo: TipoTasa, m: Frecuencia): string {
   return `N${s}${tipo === 'nominal-anticipada' ? 'A' : 'V'}`;
 }
 
+type EnlaceInicial = { params: ParametrosCredito; credito: CreditoCalculado } | { error: string } | null;
+
+/**
+ * HU-24 y HU-21: si la dirección trae una simulación en el hash (#c=…), la valida con las mismas
+ * reglas del formulario y la recalcula. Si algo está fuera de rango devuelve el error y no calcula.
+ */
+function leerEnlaceInicial(): EnlaceInicial {
+  const hash = window.location.hash;
+  if (!hash.startsWith(PREFIJO_HASH)) {
+    return null;
+  }
+  const leido = decodificarEnlace(hash);
+  if (!leido.ok) {
+    return { error: leido.errores };
+  }
+  const calculo = calcularCredito(leido.datos, (monto) => pesos(monto, leido.datos.escala));
+  return calculo.ok ? { params: leido.datos, credito: calculo.datos } : { error: calculo.errores };
+}
+
+function formularioDe(p: ParametrosCredito): FormularioSimulacion {
+  return {
+    monto: p.monto,
+    plazo: p.plazo,
+    frecuenciaPago: p.frecuenciaPago,
+    tasa: p.tasa,
+    tipoTasa: p.tipoTasa,
+    frecuenciaTasa: p.frecuenciaTasa,
+    sistema: p.sistema,
+  };
+}
+
 /** HU-07 a HU-10: datos del crédito, tasa equivalente y tabla de amortización. Funciona sin cuenta (HU-06). */
 export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props) {
-  const [f, setF] = useState<FormularioSimulacion>(INICIAL);
+  const [inicial] = useState(leerEnlaceInicial);
+  const desdeEnlace = inicial && 'credito' in inicial ? inicial : null;
+  const errorEnlace = inicial && 'error' in inicial ? inicial.error : null;
+
+  const [f, setF] = useState<FormularioSimulacion>(() => (desdeEnlace ? formularioDe(desdeEnlace.params) : INICIAL));
   const [errores, setErrores] = useState<ErroresSimulacion>({});
-  const [escala, setEscala] = useState<EscalaMonetaria>(0);
-  const [resultado, setResultado] = useState<Resultado | null>(null);
-  const [graciaTexto, setGraciaTexto] = useState('');
-  const [tipoGracia, setTipoGracia] = useState<TipoGracia>('muerta');
+  const [escala, setEscala] = useState<EscalaMonetaria>(() => desdeEnlace?.params.escala ?? 0);
+  const [resultado, setResultado] = useState<Resultado | null>(() =>
+    desdeEnlace
+      ? {
+          simulacion: desdeEnlace.credito.simulacion,
+          tasa: desdeEnlace.credito.tasa,
+          gracia: desdeEnlace.credito.gracia,
+          base: desdeEnlace.credito.base,
+          comparacion: desdeEnlace.credito.comparacion,
+        }
+      : null,
+  );
+  const [graciaTexto, setGraciaTexto] = useState(() => desdeEnlace?.params.graciaPeriodos ?? '');
+  const [tipoGracia, setTipoGracia] = useState<TipoGracia>(() => desdeEnlace?.params.graciaTipo ?? 'muerta');
   const [errorGracia, setErrorGracia] = useState<string | undefined>();
-  const [abono, setAbono] = useState<AbonoExtra | null>(null);
+  const [abono, setAbono] = useState<AbonoExtra | null>(() => desdeEnlace?.credito.abono ?? null);
   // HU-17: nombre e institución para el encabezado del PDF/XLSX. Vacío en modo invitado.
   const [perfilReporte, setPerfilReporte] = useState<{ nombre: string; institucion: string | null } | undefined>(undefined);
 
@@ -246,11 +297,14 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
     }
     void servicio.leerPerfil().then((r) => {
       if (r.ok && r.perfil) {
-        setEscala(r.perfil.escala);
+        // Una simulación abierta desde un enlace o desde "Mis simulaciones" conserva su propia escala.
+        if (!desdeEnlace) {
+          setEscala(r.perfil.escala);
+        }
         setPerfilReporte({ nombre: r.perfil.nombre, institucion: r.perfil.institucion });
       }
     });
-  }, [servicio, usuario]);
+  }, [servicio, usuario, desdeEnlace]);
 
   const cambiar = <K extends keyof FormularioSimulacion>(campo: K, valor: FormularioSimulacion[K]) => {
     setF((previo) => ({ ...previo, [campo]: valor }));
@@ -320,8 +374,43 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
 
   const periodoPago = nombreFrecuencia(f.frecuenciaPago).periodo;
 
+  // HU-21, HU-22 y HU-24: los parámetros de lo que está en pantalla, tal como los escribió el usuario.
+  const parametros = useMemo<ParametrosCredito | null>(
+    () =>
+      resultado
+        ? {
+            monto: f.monto,
+            plazo: f.plazo,
+            frecuenciaPago: f.frecuenciaPago,
+            tasa: f.tasa,
+            tipoTasa: f.tipoTasa,
+            frecuenciaTasa: f.frecuenciaTasa,
+            sistema: f.sistema,
+            graciaPeriodos: graciaTexto,
+            graciaTipo: tipoGracia,
+            escala,
+            abono: abono
+              ? { periodo: String(abono.periodo), valor: abono.valor.toString().replace('.', ','), modo: abono.modo }
+              : null,
+          }
+        : null,
+    [resultado, f, graciaTexto, tipoGracia, escala, abono],
+  );
+
+  // HU-22: el invitado con una simulación abierta puede llevarla a su cuenta al iniciar sesión.
+  useEffect(() => {
+    if (!usuario) {
+      fijarSimulacionPendiente(parametros);
+    }
+  }, [usuario, parametros]);
+
   return (
     <div className="pila">
+      {errorEnlace && (
+        <p role="alert" className="alerta">
+          No se pudo abrir el enlace. {errorEnlace} No se calculó nada: escribe los datos y simula de nuevo.
+        </p>
+      )}
       <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-simulador">
         <h1 id="titulo-simulador">Simulador de créditos</h1>
         <form className="formulario formulario--rejilla" onSubmit={simular} noValidate>
@@ -592,6 +681,8 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
               </table>
             </div>
           </section>
+
+          {parametros && <GuardarCompartir parametros={parametros} servicio={servicio} usuario={usuario} />}
         </>
       )}
     </div>
