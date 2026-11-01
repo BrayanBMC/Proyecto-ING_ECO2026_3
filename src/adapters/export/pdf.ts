@@ -1,13 +1,27 @@
 import type { ReporteArmado } from '../../core';
 
 /**
+ * Tipo mínimo de la instancia de pdfmake que usamos.
+ * Evitamos el tipo estricto TDocumentDefinitions de @types/pdfmake: la definición
+ * se arma como objeto plano y pdfmake la acepta en tiempo de ejecución.
+ */
+interface InstanciaPdfMake {
+  vfs: Record<string, string>;
+  createPdf: (definicion: unknown) => { getBlob: (cb: (blob: Blob) => void) => void };
+}
+
+/**
  * HU-17: genera el PDF del reporte con pdfmake, en el navegador.
  * pdfmake y sus fuentes se cargan con import dinámico, así no entran al bundle inicial.
  * La escala de grises del encabezado y la tabla sigue la paleta de la sección 6.
  */
 export async function exportarPdf(reporte: ReporteArmado): Promise<Blob> {
-  const [{ default: pdfMake }, vfs] = await Promise.all([import('pdfmake/build/pdfmake'), import('pdfmake/build/vfs_fonts')]);
-  // En 0.3 las fuentes vienen como { default: { ... } } o directamente como el objeto.
+  const [moduloPdf, vfs] = await Promise.all([
+    import('pdfmake/build/pdfmake'),
+    import('pdfmake/build/vfs_fonts'),
+  ]);
+  const pdfMake = (moduloPdf as unknown as { default: InstanciaPdfMake }).default;
+  // En 0.3 las fuentes vienen como { default: { vfs } } o directamente como { vfs }.
   pdfMake.vfs = (vfs as { default?: { vfs: Record<string, string> }; vfs?: Record<string, string> }).default?.vfs ??
     (vfs as unknown as { vfs: Record<string, string> }).vfs;
 
@@ -19,7 +33,7 @@ export async function exportarPdf(reporte: ReporteArmado): Promise<Blob> {
 
   const definicion = {
     info: { title: reporte.titulo },
-    pageMargins: [36, 48, 36, 48] as [number, number, number, number],
+    pageMargins: [36, 48, 36, 48],
     defaultStyle: { fontSize: 9 },
     content: [
       { text: reporte.titulo, style: 'titulo' },
@@ -61,6 +75,6 @@ export async function exportarPdf(reporte: ReporteArmado): Promise<Blob> {
   };
 
   return new Promise<Blob>((resolve) => {
-    pdfMake.createPdf(definicion).getBlob((blob: Blob) => resolve(blob));
+    pdfMake.createPdf(definicion).getBlob((blob) => resolve(blob));
   });
 }
