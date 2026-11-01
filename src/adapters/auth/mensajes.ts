@@ -1,3 +1,5 @@
+import { ErrorTiempoAgotado } from './resiliencia';
+
 /**
  * Traduce los errores del servicio de autenticación a mensajes en español para el usuario.
  * No revela si un correo existe salvo en el registro, donde Better Auth ya lo informa.
@@ -27,7 +29,15 @@ const MENSAJES: Record<string, string> = {
   // El servicio gratuito llegó a su tope global de simulaciones guardadas (migración 004).
   '53100': 'Por ahora no se pueden guardar más simulaciones en el servicio. Copia el enlace para conservar esta o inténtalo más tarde.',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
+  // La base gratuita se duerme cuando no se usa y puede tardar en despertar (resiliencia.ts).
+  TIEMPO_AGOTADO:
+    'El servicio tardó demasiado en responder (puede estar despertando). Espera unos segundos e inténtalo de nuevo. Si estabas guardando, revisa «Mis simulaciones» antes de repetir.',
 };
+
+/** Mensaje para una excepción: un tiempo agotado tiene su propio texto; lo demás, el genérico de conexión. */
+export function mensajeDeExcepcion(error: unknown): string {
+  return error instanceof ErrorTiempoAgotado ? (MENSAJES.TIEMPO_AGOTADO as string) : mensajeDeError(null);
+}
 
 export function mensajeDeError(error: ErrorServicio | null | undefined): string {
   if (error?.code && MENSAJES[error.code]) {

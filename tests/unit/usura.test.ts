@@ -68,3 +68,26 @@ describe('core/usura (HU-15)', () => {
     expect(validarIbc('abc').ok).toBe(false);
   });
 });
+
+describe('core/usura: formato de las vigencias (lo lee el recordatorio mensual)', () => {
+  it('cada vigencia cubre un mes calendario completo, del día 1 al último día', () => {
+    for (const v of VIGENCIAS_IBC) {
+      expect(v.desde, v.desde).toMatch(/^\d{4}-\d{2}-01$/);
+      const [anio, mes] = v.desde.split('-').map(Number) as [number, number];
+      const ultimoDia = new Date(anio, mes, 0).getDate();
+      expect(v.hasta).toBe(`${v.desde.slice(0, 8)}${String(ultimoDia).padStart(2, '0')}`);
+    }
+  });
+
+  it('las vigencias no se solapan ni se repiten', () => {
+    const desdes = VIGENCIAS_IBC.map((v) => v.desde);
+    expect(new Set(desdes).size).toBe(desdes.length);
+  });
+
+  it('cada IBC es un decimal entre 0 y 1', () => {
+    for (const v of VIGENCIAS_IBC) {
+      const ibc = dec(v.ibcEA);
+      expect(ibc.gt(0) && ibc.lt(1), v.desde).toBe(true);
+    }
+  });
+});

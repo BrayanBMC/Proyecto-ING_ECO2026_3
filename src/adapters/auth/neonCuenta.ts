@@ -1,6 +1,7 @@
 import { createClient } from '@neondatabase/neon-js';
 import { leerParametros, type Perfil, type SimulacionGuardada } from '../../core';
-import { mensajeDeError, type ErrorServicio } from './mensajes';
+import { mensajeDeError, mensajeDeExcepcion, type ErrorServicio } from './mensajes';
+import { conReintento, conTiempo } from './resiliencia';
 import type { DatosNuevaCuenta, ResultadoCuenta, ServicioCuenta } from './ServicioCuenta';
 
 /**
@@ -64,13 +65,17 @@ function deFilaSimulacion(fila: FilaSimulacion): SimulacionGuardada | null {
     : null;
 }
 
+/** Escrituras y acciones de cuenta: con tiempo máximo, pero SIN reintento (repetir un INSERT podría duplicarlo). */
 async function capturar(operacion: () => Promise<RespuestaSdk>): Promise<ResultadoCuenta> {
   try {
-    return aResultado(await operacion());
-  } catch {
-    return { ok: false, mensaje: mensajeDeError(null) };
+    return aResultado(await conTiempo(operacion));
+  } catch (error) {
+    return { ok: false, mensaje: mensajeDeExcepcion(error) };
   }
 }
+
+/** Lecturas: con tiempo máximo y un reintento si la base estaba dormida o la red falló. */
+const leer = <T>(operacion: () => PromiseLike<T>): Promise<T> => conReintento(operacion);
 
 export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): ServicioCuenta {
   const cliente = createClient({ auth: { url: urlAuth }, dataApi: { url: urlDataApi } });
@@ -106,7 +111,7 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
 
     sesionActual: async () => {
       try {
-        const usuario = (await cliente.auth.getSession()).data?.user;
+        const usuario = (await leer(() => cliente.auth.getSession())).data?.user;
         return usuario ? { nombre: usuario.name, correo: usuario.email } : null;
       } catch {
         return null;
@@ -126,14 +131,14 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
 
     leerPerfil: async () => {
       try {
-        const { data, error } = await cliente.from('perfil').select('*').maybeSingle();
+        const { data, error } = await leer(() => cliente.from('perfil').select('*').maybeSingle());
         if (error) {
           return { ok: false, mensaje: mensajeDeError(error) };
         }
         const fila = data as FilaPerfil | null;
         return { ok: true, perfil: fila ? deFila(fila) : null };
-      } catch {
-        return { ok: false, mensaje: mensajeDeError(null) };
+      } catch (error) {
+        return { ok: false, mensaje: mensajeDeExcepcion(error) };
       }
     },
 
@@ -153,17 +158,16 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
 
     leerConsentimientos: async () => {
       try {
-        const { data, error } = await cliente
-          .from('consentimiento')
-          .select('version_politica, aceptado_en')
-          .order('aceptado_en');
+        const { data, error } = await leer(() =>
+          cliente.from('consentimiento').select('version_politica, aceptado_en').order('aceptado_en'),
+        );
         if (error) {
           return { ok: false, mensaje: mensajeDeError(error) };
         }
         const filas = (data ?? []) as { version_politica: string; aceptado_en: string }[];
         return { ok: true, consentimientos: filas.map((f) => ({ version: f.version_politica, aceptadoEn: f.aceptado_en })) };
-      } catch {
-        return { ok: false, mensaje: mensajeDeError(null) };
+      } catch (error) {
+        return { ok: false, mensaje: mensajeDeExcepcion(error) };
       }
     },
 
@@ -185,7 +189,7 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
     // Tema de color (migración 005). Leer nunca falla: sin perfil o sin la columna, la app usa el tema del sistema.
     leerTema: async () => {
       try {
-        const { data, error } = await cliente.from('perfil').select('tema').maybeSingle();
+        const { data, error } = await leer(() => cliente.from('perfil').select('tema').maybeSingle());
         const tema = error ? null : (data as { tema?: unknown } | null)?.tema;
         return tema === 'sistema' || tema === 'claro' || tema === 'oscuro' ? tema : null;
       } catch {
@@ -213,10 +217,9 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
     // HU-21: usuario_id lo pone la base de datos y la política RLS solo deja ver y tocar las filas propias.
     listarSimulaciones: async () => {
       try {
-        const { data, error } = await cliente
-          .from('simulacion')
-          .select(COLUMNAS_SIMULACION)
-          .order('actualizado_en', { ascending: false });
+        const { data, error } = await leer(() =>
+          cliente.from('simulacion').select(COLUMNAS_SIMULACION).order('actualizado_en', { ascending: false }),
+        );
         if (error) {
           return { ok: false, mensaje: mensajeDeError(error) };
         }
@@ -224,25 +227,24 @@ export function crearServicioCuentaNeon(urlAuth: string, urlDataApi: string): Se
           .map(deFilaSimulacion)
           .filter((s): s is SimulacionGuardada => s !== null);
         return { ok: true, simulaciones };
-      } catch {
-        return { ok: false, mensaje: mensajeDeError(null) };
+      } catch (error) {
+        return { ok: false, mensaje: mensajeDeExcepcion(error) };
       }
     },
 
     guardarSimulacion: async (nombre, parametros) => {
       try {
-        const { data, error } = await cliente
-          .from('simulacion')
-          .insert({ nombre, parametros })
-          .select(COLUMNAS_SIMULACION)
-          .single();
+        // Sin reintento: repetir el INSERT podría guardar la simulación dos veces.
+        const { data, error } = await conTiempo(() =>
+          cliente.from('simulacion').insert({ nombre, parametros }).select(COLUMNAS_SIMULACION).single(),
+        );
         if (error) {
           return { ok: false, mensaje: mensajeDeError(error) };
         }
         const simulacion = deFilaSimulacion(data as FilaSimulacion);
         return simulacion ? { ok: true, simulacion } : { ok: false, mensaje: mensajeDeError(null) };
-      } catch {
-        return { ok: false, mensaje: mensajeDeError(null) };
+      } catch (error) {
+        return { ok: false, mensaje: mensajeDeExcepcion(error) };
       }
     },
 

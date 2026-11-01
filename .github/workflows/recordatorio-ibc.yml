@@ -1,0 +1,49 @@
+name: Recordatorio mensual del IBC de usura
+
+# La tasa de usura sale del IBC que certifica cada mes la Superintendencia Financiera y se copia a mano en
+# src/core/usura.ts (VIGENCIAS_IBC). Si nadie lo actualiza, desde el día 1 la app avisa "dato vencido".
+# Este workflow corre el día 25 de cada mes y abre un issue en el repositorio si el IBC del mes siguiente
+# todavía no está cargado. No abre un segundo issue si ya hay uno abierto con el mismo título.
+on:
+  schedule:
+    - cron: '0 14 25 * *' # 14:00 UTC = 09:00 en Colombia
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  recordar:
+    name: Avisar si falta el IBC del mes siguiente
+    # Los workflows programados ya corren solo desde la rama por defecto; esto cubre el disparo manual.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Abrir un issue si falta el IBC
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          siguiente=$(date -u -d "$(date -u +%Y-%m-01) +1 month" +%Y-%m)
+          if grep -q "desde: '${siguiente}-01'" src/core/usura.ts; then
+            echo "El IBC de ${siguiente} ya está cargado en src/core/usura.ts. Nada que hacer."
+            exit 0
+          fi
+          titulo="Actualizar el IBC de usura de ${siguiente}"
+          abiertos=$(gh issue list --state open --search "\"${titulo}\" in:title" --json number --jq 'length')
+          if [ "$abiertos" != "0" ]; then
+            echo "Ya hay un issue abierto: ${titulo}"
+            exit 0
+          fi
+          gh issue create --title "$titulo" --body "Falta el IBC certificado para ${siguiente}. Sin él, desde el día 1 la app muestra «dato de usura vencido» y pide al usuario escribir el IBC a mano.
+
+          1. Busca el comunicado «Superfinanciera certifica el interés bancario corriente» de ${siguiente} en https://www.superfinanciera.gov.co (modalidad: consumo y ordinario).
+          2. Agrega una entrada a \`VIGENCIAS_IBC\` en \`src/core/usura.ts\`, con \`desde: '${siguiente}-01'\`, \`hasta\` el último día del mes, \`ibcEA\` en decimal (por ejemplo 18,89 % = '0.1889') y la URL de la fuente.
+          3. Actualiza las pruebas de usura si cambian los valores esperados, abre el pull request a \`main\` y espera el CI en verde.
+
+          Este issue lo abrió el workflow «Recordatorio mensual del IBC de usura»."
+          echo "Issue abierto: ${titulo}"
