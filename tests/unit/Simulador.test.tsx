@@ -192,6 +192,7 @@ describe('HU-11: comparar sistemas', () => {
 
 const OCTUBRE = new Date(2026, 9, 15);
 const NOVIEMBRE = new Date(2026, 10, 5);
+const DICIEMBRE = new Date(2026, 11, 5);
 
 /** 10.000.000 al 1,5 % efectivo mensual en 12 cuotas (casos T3, T6 y T7). */
 function creditoBase(hoy = OCTUBRE) {
@@ -295,10 +296,10 @@ describe('HU-15: tasa de usura', () => {
   });
 
   it('criterio HU-15: con el dato vencido avisa y deja ingresar el IBC a mano con su fecha', () => {
-    creditoBase(NOVIEMBRE);
+    creditoBase(DICIEMBRE);
     simular();
     const usura = screen.getByRole('heading', { name: 'Tasa de usura' }).closest('section')!;
-    expect(texto(usura)).toContain('Dato de usura vencido (vigente hasta 31/10/2026)');
+    expect(texto(usura)).toContain('Dato de usura vencido (vigente hasta 30/11/2026)');
     expect(within(usura).queryByText(/Supera la usura|Dentro del límite/)).toBeNull();
 
     fireEvent.click(within(usura).getByRole('button', { name: 'Usar este IBC' }));
@@ -306,10 +307,18 @@ describe('HU-15: tasa de usura', () => {
     expect(within(usura).getByText('Escribe la fecha de vigencia del IBC.')).toBeTruthy();
 
     escribir('IBC efectivo anual (%)', '19,06');
-    escribir('Vigente hasta', '2026-11-30');
+    escribir('Vigente hasta', '2026-12-31');
     fireEvent.click(within(usura).getByRole('button', { name: 'Usar este IBC' }));
     expect(texto(usura)).toContain('Dentro del límite de usura (28,59 % EA)');
-    expect(texto(usura)).toContain('Ingresado por el usuario, vigencia 30/11/2026');
+    expect(texto(usura)).toContain('Ingresado por el usuario, vigencia 31/12/2026');
+  });
+
+  it('criterio HU-15: en noviembre de 2026 usa el IBC certificado y la usura es 28,34 %', () => {
+    creditoBase(NOVIEMBRE);
+    simular();
+    const usura = screen.getByRole('heading', { name: 'Tasa de usura' }).closest('section')!;
+    expect(texto(usura)).toContain('(28,34 % EA)');
+    expect(texto(usura)).not.toContain('vencido');
   });
 });
 
