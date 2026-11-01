@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LONGITUD_MAXIMA_NOMBRE, type ResultadoValidacion } from './cuenta';
+import type { SimulacionGuardada } from './guardado';
 
 /** HU-04: perfil del usuario. Módulo puro: solo valida y arma datos. */
 
@@ -67,6 +68,7 @@ export function armarExportacion(datos: {
   correo: string;
   perfil: Perfil | null;
   consentimientos: readonly { version: string; aceptadoEn: string }[];
+  simulaciones: readonly SimulacionGuardada[];
   generadoEn: Date;
 }) {
   return {
@@ -75,8 +77,7 @@ export function armarExportacion(datos: {
     cuenta: { correo: datos.correo },
     perfil: datos.perfil,
     consentimientos: datos.consentimientos,
-    // Se llenan cuando existan las historias HU-21 a HU-23.
-    simulaciones: [],
-    escenarios: [],
+    // Las simulaciones guardadas (HU-21), tal como las escribió el usuario.
+    simulaciones: datos.simulaciones,
   };
 }

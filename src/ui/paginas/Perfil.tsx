@@ -91,7 +91,12 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
 
   const descargarDatos = async () => {
     setAlerta(null);
-    const [perfil, consentimientos] = await Promise.all([servicio.leerPerfil(), servicio.leerConsentimientos()]);
+    const [perfil, consentimientos, simulaciones] = await Promise.all([
+      servicio.leerPerfil(),
+      servicio.leerConsentimientos(),
+      servicio.listarSimulaciones(),
+    ]);
+    // Si algo no se pudo leer, no se descarga un archivo incompleto.
     if (!perfil.ok) {
       setAlerta(perfil.mensaje);
       return;
@@ -100,10 +105,20 @@ export function PaginaPerfil({ servicio, usuario, alCambiarSesion, descargar = d
       setAlerta(consentimientos.mensaje);
       return;
     }
+    if (!simulaciones.ok) {
+      setAlerta(simulaciones.mensaje);
+      return;
+    }
     const generadoEn = new Date();
     descargar(
       `amortiza-mis-datos-${generadoEn.toISOString().slice(0, 10)}.json`,
-      armarExportacion({ correo: usuario.correo, perfil: perfil.perfil, consentimientos: consentimientos.consentimientos, generadoEn }),
+      armarExportacion({
+        correo: usuario.correo,
+        perfil: perfil.perfil,
+        consentimientos: consentimientos.consentimientos,
+        simulaciones: simulaciones.simulaciones,
+        generadoEn,
+      }),
     );
   };
 

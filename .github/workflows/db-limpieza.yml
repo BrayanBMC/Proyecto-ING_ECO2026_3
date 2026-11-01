@@ -18,6 +18,8 @@ concurrency:
 jobs:
   limpiar:
     name: Limpiar y revisar el uso de Neon
+    # Solo desde main: aunque alguien lo lance a mano desde otra rama, no toca la base.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: neon
     steps:

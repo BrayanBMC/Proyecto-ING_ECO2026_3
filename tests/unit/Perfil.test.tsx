@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ServicioCuenta, Usuario } from '../../src/adapters/auth/ServicioCuenta';
-import type { Perfil } from '../../src/core';
+import { VERSION_POLITICA, type Perfil, type SimulacionGuardada } from '../../src/core';
 import { App } from '../../src/ui/App';
 import { PaginaPerfil } from '../../src/ui/paginas/Perfil';
 import { fallo, servicioFalso } from './servicioFalso';
@@ -108,8 +108,49 @@ describe('HU-05: descargar mis datos y eliminar mi cuenta', () => {
     expect(nombreArchivo).toMatch(/^amortiza-mis-datos-\d{4}-\d{2}-\d{2}\.json$/);
     expect(datos.cuenta).toEqual({ correo: 'ana@correo.co' });
     expect(datos.perfil).toEqual(PERFIL_ANA);
-    expect(datos.consentimientos).toEqual([{ version: '2026-10-30', aceptadoEn: '2026-10-30T15:00:00Z' }]);
+    expect(datos.consentimientos).toEqual([{ version: VERSION_POLITICA, aceptadoEn: '2026-11-01T15:00:00Z' }]);
     expect(datos.simulaciones).toEqual([]);
+  });
+
+  it('"Descargar mis datos" incluye las simulaciones guardadas', async () => {
+    const guardada: SimulacionGuardada = {
+      id: 'a',
+      nombre: 'Casa',
+      parametros: {
+        monto: '10.000.000',
+        plazo: '12',
+        frecuenciaPago: 12,
+        tasa: '1,5',
+        tipoTasa: 'efectiva',
+        frecuenciaTasa: 12,
+        sistema: 'frances',
+        graciaPeriodos: '',
+        graciaTipo: 'muerta',
+        escala: 0,
+        abono: null,
+      },
+      actualizadoEn: '2026-11-01T15:00:00.000Z',
+    };
+    const servicio = servicioFalso({
+      listarSimulaciones: vi.fn<ServicioCuenta['listarSimulaciones']>(async () => ({ ok: true, simulaciones: [guardada] })),
+    });
+    const { descargar } = pintar(servicio);
+    await screen.findByLabelText('Nombre');
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar mis datos' }));
+    await waitFor(() => expect(descargar).toHaveBeenCalledTimes(1));
+    const [, datos] = descargar.mock.calls[0] as [string, Record<string, unknown>];
+    expect(datos.simulaciones).toEqual([guardada]);
+  });
+
+  it('si falla la lectura de las simulaciones no descarga un archivo incompleto', async () => {
+    const servicio = servicioFalso({
+      listarSimulaciones: vi.fn<ServicioCuenta['listarSimulaciones']>(async () => ({ ok: false, mensaje: 'Sin conexión.' })),
+    });
+    const { descargar } = pintar(servicio);
+    await screen.findByLabelText('Nombre');
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar mis datos' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('Sin conexión.');
+    expect(descargar).not.toHaveBeenCalled();
   });
 
   it('si falla la lectura de consentimientos no descarga y muestra el error', async () => {

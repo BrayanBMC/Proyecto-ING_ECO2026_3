@@ -21,7 +21,7 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 | HU-02 | Iniciar y cerrar sesión | Página "Iniciar sesión". Con contraseña errada sale "Correo o contraseña incorrectos" sin revelar si el correo existe. Con sesión, la cabecera muestra "Hola, {nombre}", "Mi perfil" y "Cerrar sesión". |
 | HU-03 | Recuperar la contraseña | "¿Olvidaste tu contraseña?" envía un código al correo para definir una nueva. Si el código está mal o venció, se puede pedir otro. |
 | HU-04 | Perfil | "Mi perfil" guarda nombre, institución, programa, decimales (0 o 2) y días del año (360 o 365). Se carga igual en cualquier equipo, y el simulador usa sola la preferencia de decimales. |
-| HU-05 | Descargar mis datos y eliminar mi cuenta | "Descargar mis datos" baja un JSON con cuenta, perfil y consentimientos. "Eliminar mi cuenta" pide la contraseña y borra todo en cascada. |
+| HU-05 | Descargar mis datos y eliminar mi cuenta | "Descargar mis datos" baja un JSON con cuenta, perfil, consentimientos y simulaciones guardadas. "Eliminar mi cuenta" pide la contraseña y borra todo en cascada. |
 | HU-06 | Modo invitado | Toda la app funciona sin cuenta y no guarda nada en el navegador (ni `localStorage`, ni `sessionStorage`, ni cookies). |
 | HU-07 | Datos del crédito | Monto, número de cuotas (1 a 360) y frecuencia de pago, con el rango permitido visible al salir de cada campo. |
 | HU-08 | Tasa nominal o efectiva | Convierte la tasa a efectiva anual (EA) y a la tasa del periodo de pago, y muestra los pasos en "¿Cómo se calculó?". |
@@ -48,6 +48,7 @@ El avance historia por historia está en `BITACORA_DESARROLLO.md`.
 |---|---|
 | Tema claro y oscuro | Los botones "Sistema / Claro / Oscuro" de la cabecera cambian la apariencia al instante. "Sistema" sigue la preferencia del dispositivo. Con sesión, la elección se guarda en el perfil (columna `tema`, migración `005`) y se aplica sola en otro equipo; como invitado dura hasta recargar la página (no se guarda nada en el navegador). Los dos temas cumplen WCAG 2.2 AA (contraste de texto 4,5:1, de bordes de controles 3:1, objetivos de 44 px). Los PDF y Excel siempre salen sobre blanco. |
 | Ayuda contextual `?` | Junto a cada campo, grupo de opciones y resultado hay un botón `?` con una explicación corta (aparece con el mouse, con el foco del teclado o con un toque) y "Saber más", que abre un cuadro con ejemplo, rango permitido y el error más común. Todos los textos están en `src/ui/ayuda/glosario.ts`, y los rangos salen de las mismas constantes que usa la validación. Una prueba falla si un campo no tiene su entrada. |
+| Política de datos al día | La política (versión `2026-11-01`) ahora explica que se guardan perfil, tema y simulaciones, y qué hace el modo invitado. Quien aceptó una versión anterior ve, al iniciar sesión, el aviso "Actualizamos la política de datos" con el botón "Acepto la nueva versión", que guarda un consentimiento nuevo. El aviso no bloquea el uso de la app. |
 | Ventana de bienvenida | Al cargar la app se abre una ventana con el título del proyecto, el autor, la universidad, la carrera y el semestre, el aviso de que los cálculos son educativos y enlaces a la política de datos y al simulador. **Reaparece cada vez que se recarga la página**: su estado vive solo en memoria porque la app no guarda nada en el navegador. Se cierra con "Entendido" o con Esc. |
 
 ## 1. Requisitos previos
@@ -129,7 +130,7 @@ En `develop` y en los pull request el pipeline prueba y construye, pero no despl
 
 ### Migraciones de base de datos
 
-El workflow `.github/workflows/db-migrate.yml` ("Migraciones de base de datos") aplica en orden los archivos de `db/migrations/` con `psql`, usando el secreto `NEON_DATABASE_URL`. Se ejecuta a mano: GitHub → Actions → "Migraciones de base de datos" → Run workflow. Los archivos son idempotentes, así que repetirlo no hace daño. Después de cada migración, en Neon → Data API, pulsa "Refresh schema cache".
+El workflow `.github/workflows/db-migrate.yml` ("Migraciones de base de datos") aplica en orden los archivos de `db/migrations/` con `psql`, usando el secreto `NEON_DATABASE_URL`. Se ejecuta a mano y **solo desde la rama `main`** (desde otra rama el trabajo se omite sin tocar la base): GitHub → Actions → "Migraciones de base de datos" → Run workflow, con la rama `main`. Los archivos son idempotentes, así que repetirlo no hace daño. Después de cada migración, en Neon → Data API, pulsa "Refresh schema cache".
 
 | Archivo | Historia | Qué crea |
 |---|---|---|
@@ -151,7 +152,7 @@ El plan gratuito de Neon da, por proyecto y según [su documentación](https://n
 | Cómputo | La app no consulta la base de forma periódica: solo al iniciar sesión y al guardar, abrir, renombrar o borrar. Neon suspende el cómputo solo cuando no hay actividad. La limpieza diaria lo despierta un minuto. |
 | Un crecimiento que no previmos | El mismo workflow mide el almacenamiento: avisa al llegar a 500 MB y falla al llegar a 800 MB, y GitHub envía un correo. |
 
-La limpieza es el workflow `.github/workflows/db-limpieza.yml` ("Limpieza diaria de la base de datos"), que corre solo a las 03:17 hora de Colombia, usa el mismo secreto `NEON_DATABASE_URL` y ejecuta `db/mantenimiento/limpieza_diaria.sql`. También se puede lanzar a mano desde Actions. Los workflows programados corren solo desde la rama `main`, y GitHub los pausa si el repositorio pasa 60 días sin actividad: en ese caso, entra a Actions y reactívalo.
+La limpieza es el workflow `.github/workflows/db-limpieza.yml` ("Limpieza diaria de la base de datos"), que corre solo a las 03:17 hora de Colombia, usa el mismo secreto `NEON_DATABASE_URL` y ejecuta `db/mantenimiento/limpieza_diaria.sql`. También se puede lanzar a mano desde Actions, pero solo hace algo en la rama `main`. El job de pruebas del CI no lee los secretos de la base ni de Cloudflare: solo las dos URL públicas del build. Los workflows programados corren solo desde la rama `main`, y GitHub los pausa si el repositorio pasa 60 días sin actividad: en ese caso, entra a Actions y reactívalo.
 
 El Worker no debe tener conectada la integración Git de Cloudflare (Settings → Build): esa integración publica sin correr las pruebas. Solo despliega GitHub Actions.
 

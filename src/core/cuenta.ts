@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 
 /** Versión vigente de la política de tratamiento de datos. Se guarda con cada consentimiento. */
-export const VERSION_POLITICA = '2026-10-30';
+export const VERSION_POLITICA = '2026-11-01';
 
 export const LONGITUD_MINIMA_CONTRASENA = 10;
 export const LONGITUD_MAXIMA_CONTRASENA = 128;
