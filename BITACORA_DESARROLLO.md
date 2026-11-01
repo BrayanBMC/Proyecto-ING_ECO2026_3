@@ -725,3 +725,25 @@ Pruebas:
 2. Con una cuenta creada antes de esta versión, iniciar sesión. Resultado esperado: aparece "Actualizamos la política de datos". Pulsar "Leer la política" y luego "Acepto la nueva versión". Resultado esperado: el aviso desaparece y no vuelve a salir al recargar.
 3. GitHub → Actions → "Migraciones de base de datos" → Run workflow con la rama `develop`. Resultado esperado: el trabajo aparece como omitido (skipped). Con `main`, corre normal.
 4. (Opcional, en la web de GitHub) Settings → Environments → `neon` → "Deployment branches" → "Selected branches" → agregar `main` y `develop`. Así los secretos solo llegan a esas ramas.
+
+## [Fase 5, parte 2] - Base dormida, aviso del IBC y casos límite (hallazgos 9, 11 y 15)
+**Fecha:** 1 de noviembre de 2026
+**Estado:** Código y pruebas escritos; falta la confirmación de GitHub Actions y la aprobación del usuario. La parte 1 quedó aprobada con el CI en verde (commit `32f1b0f`). No hay migraciones nuevas.
+**Pedido:** "Aprobado" a la parte 1 y seguir con los hallazgos más acotados de la auditoría: 9, 11 y 15.
+### ¿Qué se hizo?
+- **Hallazgo 9:** `src/adapters/auth/resiliencia.ts` (nuevo) con `conTiempo` y `conReintento`. `neonCuenta.ts` ahora pone un tiempo máximo de 15 s a toda llamada. Las lecturas (perfil, consentimientos, tema, lista de simulaciones, sesión) se repiten una vez si la base estaba dormida o la red falló. Las escrituras no se repiten. Si se acaba el tiempo, el mensaje explica que el servicio puede estar despertando y, si se estaba guardando, pide revisar «Mis simulaciones» antes de repetir.
+- **Hallazgo 11:** `.github/workflows/recordatorio-ibc.yml`. El día 25 de cada mes revisa si `src/core/usura.ts` ya trae el IBC del mes siguiente; si no, abre un issue con los pasos para cargarlo. No abre uno duplicado.
+- **Hallazgo 15:** `tests/unit/casosLimite.test.ts` (n = 1, gracia igual al plazo, 60 + 360 = 420 periodos con medición de tiempo) y tres pruebas del formato de las vigencias en `tests/unit/usura.test.ts`.
+### ¿Cómo se hizo? (Explicación técnica)
+- **Por qué no se reintentan las escrituras.** Si un INSERT tarda y se repite, la simulación podría guardarse dos veces. Con una lectura repetir no tiene costo. El tiempo máximo no cancela la llamada (el SDK no lo permite), solo deja de esperarla: por eso el mensaje avisa que lo guardado puede haber llegado.
+- **Qué se considera un error repetible.** Excepciones, tiempos agotados, respuestas con estado 5xx o con mensajes de red («failed to fetch», «timeout»). Los errores de permisos o de datos (por ejemplo RLS o el tope de 50) no se repiten: repetirlos no los arregla.
+- **Recordatorio.** Compara con `grep` el texto `desde: 'AAAA-MM-01'` del mes siguiente en `usura.ts`; una prueba comprueba que todas las vigencias respetan ese formato (día 1 y último día del mes). Usa `GITHUB_TOKEN` con permiso `issues: write` y `gh issue create`; no requiere secretos nuevos. Se ejecuta solo desde `main`.
+- **Casos límite.** No encontraron errores en el motor: las pruebas fijan el comportamiento correcto en los bordes (una cuota paga capital más interés y deja el saldo en 0; con gracia igual al plazo la tabla tiene el doble de filas y lo abonado es el saldo al salir de la gracia; la tabla más larga tiene 421 filas). El límite de tiempo es 2 s (4 s para la comparación) a propósito para que no falle en máquinas lentas.
+### Pruebas unitarias implementadas
+- `tests/unit/resiliencia.test.ts` (con temporizadores falsos): resultado a tiempo, tiempo agotado, no hay temporizadores colgados, reintento tras excepción, tras llamada colgada y tras error transitorio, sin reintento en errores de permisos, un solo reintento, y los mensajes.
+- `tests/unit/casosLimite.test.ts` y `tests/unit/usura.test.ts` como se describió arriba.
+### ¿Cómo probar esta funcionalidad manualmente?
+1. Dejar la app sin usar unos minutos (Neon se duerme), iniciar sesión y abrir «Mis simulaciones». Resultado esperado: carga aunque tarde unos segundos; no queda esperando para siempre.
+2. Para ver el mensaje de tiempo agotado (opcional), desconectar la red mientras se carga «Mis simulaciones». Resultado esperado: tras un instante sale «No pudimos completar la operación. Revisa tu conexión…».
+3. GitHub → Actions → «Recordatorio mensual del IBC de usura» → Run workflow en `main`. Resultado esperado: como el IBC de diciembre aún no está cargado, abre un issue «Actualizar el IBC de usura de 2026-12»; si se ejecuta otra vez, dice que ya hay uno abierto. Requiere que los Issues estén activados (Settings → General → Features → Issues).
+4. Simular 1 cuota, y luego 12 cuotas con 12 de gracia. Resultado esperado: el saldo final es 0 y las filas de gracia aparecen marcadas.
