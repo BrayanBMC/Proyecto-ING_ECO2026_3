@@ -1,4 +1,4 @@
-import { crearRepoInvitado, repoDeCuenta } from '../../src/adapters/repo/RepoSimulaciones';
+import { VIGENCIA_INVITADO_MS, crearRepoInvitado, repoDeCuenta } from '../../src/adapters/repo/RepoSimulaciones';
 import { PREFIJO_HASH, codificarEnlace, crearEnlace, decodificarEnlace } from '../../src/adapters/share/url';
 import { LIMITE_GUARDADAS, calcularCredito, type ParametrosCredito, type SimulacionGuardada } from '../../src/core';
 import { servicioFalso } from './servicioFalso';
@@ -136,6 +136,58 @@ describe('adapters/repo: modo invitado (HU-21, HU-23)', () => {
     }
     const r = await repo.guardar('de más', params());
     expect(r).toEqual({ ok: false, mensaje: `Llegaste al límite de ${LIMITE_GUARDADAS} simulaciones. Borra alguna para guardar otra.` });
+  });
+
+  it('las simulaciones del invitado se borran solas pasadas 24 horas, aunque deje la pestaña abierta', async () => {
+    expect(VIGENCIA_INVITADO_MS).toBe(24 * 60 * 60 * 1000);
+    const hora = 60 * 60 * 1000;
+    let ms = Date.UTC(2026, 10, 1, 8, 0, 0);
+    const repo = crearRepoInvitado(() => new Date(ms));
+    await repo.guardar('Vieja', params());
+
+    ms += 12 * hora; // medio día después: sigue
+    await repo.guardar('Nueva', params());
+    let lista = await repo.listar();
+    expect(lista.ok && lista.datos.map((s) => s.nombre)).toEqual(['Nueva', 'Vieja']);
+
+    ms += 13 * hora; // 25 h desde la primera, 13 h desde la segunda: solo vence la primera
+    lista = await repo.listar();
+    expect(lista.ok && lista.datos.map((s) => s.nombre)).toEqual(['Nueva']);
+
+    ms += 12 * hora; // ahora vence también la segunda
+    lista = await repo.listar();
+    expect(lista.ok && lista.datos).toEqual([]);
+  });
+
+  it('una simulación vencida ya no se puede renombrar ni borrar, y renombrar renueva su día', async () => {
+    const hora = 60 * 60 * 1000;
+    let ms = Date.UTC(2026, 10, 1, 8, 0, 0);
+    const repo = crearRepoInvitado(() => new Date(ms));
+    const a = await repo.guardar('A', params());
+    const b = await repo.guardar('B', params());
+    if (!a.ok || !b.ok) {
+      throw new Error('no guardó');
+    }
+
+    ms += 20 * hora;
+    expect(await repo.renombrar(b.datos.id, 'B2')).toEqual({ ok: true, datos: null }); // renueva el día de B
+
+    ms += 8 * hora; // A tiene 28 h; B tiene 8 h
+    expect(await repo.renombrar(a.datos.id, 'A2')).toEqual({ ok: false, mensaje: 'No encontramos esa simulación.' });
+    expect(await repo.borrar(a.datos.id)).toEqual({ ok: false, mensaje: 'No encontramos esa simulación.' });
+    expect(await repo.borrar(b.datos.id)).toEqual({ ok: true, datos: null });
+  });
+
+  it('las vencidas dejan lugar bajo el tope de guardadas', async () => {
+    const hora = 60 * 60 * 1000;
+    let ms = Date.UTC(2026, 10, 1, 8, 0, 0);
+    const repo = crearRepoInvitado(() => new Date(ms));
+    for (let k = 0; k < LIMITE_GUARDADAS; k++) {
+      await repo.guardar(`S${k}`, params());
+    }
+    expect((await repo.guardar('de más', params())).ok).toBe(false);
+    ms += 25 * hora;
+    expect((await repo.guardar('después de un día', params())).ok).toBe(true);
   });
 
   it('vaciar deja la sesión sin nada y usa el reloj real por defecto', async () => {

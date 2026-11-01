@@ -140,7 +140,7 @@ export function PaginaMisSimulaciones({ servicio, usuario }: Props) {
           <p className="tarjeta__texto">Guardadas en tu cuenta, de la más reciente a la más antigua.</p>
         ) : (
           <p className="tarjeta__texto">
-            Modo invitado: estas simulaciones viven solo en esta pestaña y se pierden al cerrarla.{' '}
+            Modo invitado: estas simulaciones viven solo en esta pestaña y se borran al cerrarla o pasadas 24 horas.{' '}
             <Enlace href="/iniciar-sesion">Inicia sesión</Enlace> para conservarlas.
           </p>
         )}

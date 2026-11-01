@@ -46,18 +46,38 @@ export interface RepoInvitado extends RepoSimulaciones {
 
 const NO_ENCONTRADA = 'No encontramos esa simulación.';
 
-/** Modo invitado: una lista en memoria, sin red ni almacenamiento del navegador. */
-export function crearRepoInvitado(ahora: () => Date = () => new Date()): RepoInvitado {
+/** Lo que el invitado guarda en la pestaña se borra pasado un día, aunque la deje abierta. */
+export const VIGENCIA_INVITADO_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Modo invitado: una lista en memoria, sin red ni almacenamiento del navegador.
+ * Nada de esto llega a Neon, así que no gasta cuota de la base de datos. Cada simulación se
+ * borra sola 24 horas después de su última modificación (y todas al cerrar la pestaña).
+ */
+export function crearRepoInvitado(
+  ahora: () => Date = () => new Date(),
+  vigenciaMs: number = VIGENCIA_INVITADO_MS,
+): RepoInvitado {
   let guardadas: SimulacionGuardada[] = [];
   let contador = 0;
 
+  /** Quita las que ya cumplieron su día. Se llama antes de cada operación. */
+  const depurar = () => {
+    const limite = ahora().getTime() - vigenciaMs;
+    guardadas = guardadas.filter((s) => new Date(s.actualizadoEn).getTime() > limite);
+  };
+
   return {
-    listar: async () => ({
-      ok: true,
-      // Más reciente primero. `guardadas` ya guarda la última al inicio y el orden es estable.
-      datos: [...guardadas].sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn)),
-    }),
+    listar: async () => {
+      depurar();
+      return {
+        ok: true,
+        // Más reciente primero. `guardadas` ya guarda la última al inicio y el orden es estable.
+        datos: [...guardadas].sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn)),
+      };
+    },
     guardar: async (nombre, parametros) => {
+      depurar();
       if (guardadas.length >= LIMITE_GUARDADAS) {
         return { ok: false, mensaje: `Llegaste al límite de ${LIMITE_GUARDADAS} simulaciones. Borra alguna para guardar otra.` };
       }
@@ -72,6 +92,7 @@ export function crearRepoInvitado(ahora: () => Date = () => new Date()): RepoInv
       return { ok: true, datos: nueva };
     },
     renombrar: async (id, nombre) => {
+      depurar();
       if (!guardadas.some((s) => s.id === id)) {
         return { ok: false, mensaje: NO_ENCONTRADA };
       }
@@ -79,6 +100,7 @@ export function crearRepoInvitado(ahora: () => Date = () => new Date()): RepoInv
       return { ok: true, datos: null };
     },
     borrar: async (id) => {
+      depurar();
       if (!guardadas.some((s) => s.id === id)) {
         return { ok: false, mensaje: NO_ENCONTRADA };
       }
