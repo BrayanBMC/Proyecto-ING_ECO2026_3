@@ -1,12 +1,17 @@
+/// <reference types="node" />
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Usuario } from '../../src/adapters/auth/ServicioCuenta';
 import { App } from '../../src/ui/App';
 import { PaginaSimulador } from '../../src/ui/paginas/Simulador';
 import { SelectorTema } from '../../src/ui/SelectorTema';
 import { aplicarTema, COLOR_BARRA, esTema, TEMAS } from '../../src/ui/tema';
-import html from '../../index.html?raw';
-import css from '../../src/ui/styles.css?raw';
 import { servicioFalso } from './servicioFalso';
+
+// Vitest vacía los .css importados (incluso con ?raw), así que se leen del disco.
+const css = readFileSync(resolve(process.cwd(), 'src/ui/styles.css'), 'utf8');
+const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
 
 type Tokens = Record<string, string>;
 
