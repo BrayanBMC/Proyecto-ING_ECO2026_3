@@ -6,8 +6,14 @@ import type { ReporteArmado } from '../../core';
  * se arma como objeto plano y pdfmake la acepta en tiempo de ejecución.
  */
 interface InstanciaPdfMake {
-  vfs: Record<string, string>;
-  createPdf: (definicion: unknown) => { getBlob: (cb: (blob: Blob) => void) => void };
+  addVirtualFileSystem: (fuentes: Record<string, string>) => void;
+  createPdf: (definicion: unknown) => { getBlob: () => Promise<Blob> };
+}
+
+/** Los módulos de pdfmake son CommonJS: según el empaquetador el objeto viene en `default` o directo. */
+function sinEnvoltura<T>(modulo: unknown): T {
+  const m = modulo as { default?: T };
+  return m.default ?? (modulo as T);
 }
 
 /**
@@ -16,14 +22,13 @@ interface InstanciaPdfMake {
  * La escala de grises del encabezado y la tabla sigue la paleta de la sección 6.
  */
 export async function exportarPdf(reporte: ReporteArmado): Promise<Blob> {
-  const [moduloPdf, vfs] = await Promise.all([
+  const [moduloPdf, moduloFuentes] = await Promise.all([
     import('pdfmake/build/pdfmake'),
     import('pdfmake/build/vfs_fonts'),
   ]);
-  const pdfMake = (moduloPdf as unknown as { default: InstanciaPdfMake }).default;
-  // En 0.3 las fuentes vienen como { default: { vfs } } o directamente como { vfs }.
-  pdfMake.vfs = (vfs as { default?: { vfs: Record<string, string> }; vfs?: Record<string, string> }).default?.vfs ??
-    (vfs as unknown as { vfs: Record<string, string> }).vfs;
+  const pdfMake = sinEnvoltura<InstanciaPdfMake>(moduloPdf);
+  // En pdfmake 0.3 las fuentes se registran con addVirtualFileSystem (ya no existe la propiedad vfs).
+  pdfMake.addVirtualFileSystem(sinEnvoltura<Record<string, string>>(moduloFuentes));
 
   const anchoColumnas = reporte.columnas.map((_, i) => (i === 0 ? 'auto' : '*'));
   const cuerpoTabla = [
@@ -74,7 +79,5 @@ export async function exportarPdf(reporte: ReporteArmado): Promise<Blob> {
     }),
   };
 
-  return new Promise<Blob>((resolve) => {
-    pdfMake.createPdf(definicion).getBlob((blob) => resolve(blob));
-  });
+  return pdfMake.createPdf(definicion).getBlob();
 }
