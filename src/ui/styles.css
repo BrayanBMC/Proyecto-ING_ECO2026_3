@@ -602,3 +602,23 @@ summary {
   border: 1px solid var(--borde);
   border-radius: 10px;
 }
+
+/* HU-21 y HU-23: lista de simulaciones guardadas y comparador */
+.lista-simulaciones {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+
+.titulo-simulacion {
+  margin: 0;
+  font-size: var(--t-md);
+}
+
+.tabla td.celda-mejor,
+.tabla th.celda-mejor {
+  color: var(--exito);
+  font-weight: 600;
+}

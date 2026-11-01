@@ -22,6 +22,8 @@ const MENSAJES: Record<string, string> = {
   INVALID_OTP: 'El código no es correcto. Revísalo o pide uno nuevo.',
   OTP_EXPIRED: 'El código venció. Pide uno nuevo.',
   SIN_SESION: 'Tu sesión terminó. Inicia sesión de nuevo.',
+  // HU-21: el trigger de la base de datos limita a 50 simulaciones por usuario (código 54000).
+  '54000': 'Llegaste al límite de 50 simulaciones guardadas. Borra alguna para guardar otra.',
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
 };
 

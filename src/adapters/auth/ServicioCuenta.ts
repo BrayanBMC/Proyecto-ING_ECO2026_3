@@ -1,4 +1,4 @@
-import type { Perfil } from '../../core';
+import type { ParametrosCredito, Perfil, SimulacionGuardada } from '../../core';
 
 /**
  * Puerto de cuentas de usuario. La UI solo conoce esta interfaz; la implementación real
@@ -56,4 +56,16 @@ export interface ServicioCuenta {
   >;
   /** HU-05: comprueba la contraseña y borra la cuenta con todos sus datos. Deja la sesión cerrada. */
   eliminarCuenta(correo: string, contrasena: string): Promise<ResultadoCuenta>;
+
+  /** HU-21: simulaciones guardadas del usuario, la más reciente primero. */
+  listarSimulaciones(): Promise<{ ok: true; simulaciones: SimulacionGuardada[] } | { ok: false; mensaje: string }>;
+  /** HU-21: guarda los parámetros de una simulación con un nombre. */
+  guardarSimulacion(
+    nombre: string,
+    parametros: ParametrosCredito,
+  ): Promise<{ ok: true; simulacion: SimulacionGuardada } | { ok: false; mensaje: string }>;
+  /** HU-21: cambia el nombre de una simulación propia. */
+  renombrarSimulacion(id: string, nombre: string): Promise<ResultadoCuenta>;
+  /** HU-21: borra una simulación propia. */
+  borrarSimulacion(id: string): Promise<ResultadoCuenta>;
 }

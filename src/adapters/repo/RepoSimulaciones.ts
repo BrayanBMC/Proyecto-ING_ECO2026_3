@@ -1,0 +1,92 @@
+import { LIMITE_GUARDADAS, type ParametrosCredito, type SimulacionGuardada } from '../../core';
+import type { ServicioCuenta } from '../auth/ServicioCuenta';
+
+/**
+ * Puerto de simulaciones guardadas. La UI usa siempre esta interfaz; hay dos implementaciones:
+ * - Registrado: las guarda en Neon, aisladas por usuario con RLS (a través de ServicioCuenta).
+ * - Invitado: las guarda solo en memoria de la pestaña; al cerrarla no queda nada.
+ */
+
+export type ResultadoRepo<T> = { ok: true; datos: T } | { ok: false; mensaje: string };
+
+export interface RepoSimulaciones {
+  /** Más recientes primero. */
+  listar(): Promise<ResultadoRepo<SimulacionGuardada[]>>;
+  guardar(nombre: string, parametros: ParametrosCredito): Promise<ResultadoRepo<SimulacionGuardada>>;
+  renombrar(id: string, nombre: string): Promise<ResultadoRepo<null>>;
+  borrar(id: string): Promise<ResultadoRepo<null>>;
+}
+
+/** Modo registrado: delega en el servicio de cuentas (Neon). */
+export function repoDeCuenta(servicio: ServicioCuenta): RepoSimulaciones {
+  return {
+    listar: async () => {
+      const r = await servicio.listarSimulaciones();
+      return r.ok ? { ok: true, datos: r.simulaciones } : r;
+    },
+    guardar: async (nombre, parametros) => {
+      const r = await servicio.guardarSimulacion(nombre, parametros);
+      return r.ok ? { ok: true, datos: r.simulacion } : r;
+    },
+    renombrar: async (id, nombre) => {
+      const r = await servicio.renombrarSimulacion(id, nombre);
+      return r.ok ? { ok: true, datos: null } : r;
+    },
+    borrar: async (id) => {
+      const r = await servicio.borrarSimulacion(id);
+      return r.ok ? { ok: true, datos: null } : r;
+    },
+  };
+}
+
+export interface RepoInvitado extends RepoSimulaciones {
+  /** Borra todo lo guardado en la sesión. */
+  vaciar(): void;
+}
+
+const NO_ENCONTRADA = 'No encontramos esa simulación.';
+
+/** Modo invitado: una lista en memoria, sin red ni almacenamiento del navegador. */
+export function crearRepoInvitado(ahora: () => Date = () => new Date()): RepoInvitado {
+  let guardadas: SimulacionGuardada[] = [];
+  let contador = 0;
+
+  return {
+    listar: async () => ({
+      ok: true,
+      // Más reciente primero. `guardadas` ya guarda la última al inicio y el orden es estable.
+      datos: [...guardadas].sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn)),
+    }),
+    guardar: async (nombre, parametros) => {
+      if (guardadas.length >= LIMITE_GUARDADAS) {
+        return { ok: false, mensaje: `Llegaste al límite de ${LIMITE_GUARDADAS} simulaciones. Borra alguna para guardar otra.` };
+      }
+      contador += 1;
+      const nueva: SimulacionGuardada = {
+        id: `invitado-${contador}`,
+        nombre,
+        parametros,
+        actualizadoEn: ahora().toISOString(),
+      };
+      guardadas = [nueva, ...guardadas];
+      return { ok: true, datos: nueva };
+    },
+    renombrar: async (id, nombre) => {
+      if (!guardadas.some((s) => s.id === id)) {
+        return { ok: false, mensaje: NO_ENCONTRADA };
+      }
+      guardadas = guardadas.map((s) => (s.id === id ? { ...s, nombre, actualizadoEn: ahora().toISOString() } : s));
+      return { ok: true, datos: null };
+    },
+    borrar: async (id) => {
+      if (!guardadas.some((s) => s.id === id)) {
+        return { ok: false, mensaje: NO_ENCONTRADA };
+      }
+      guardadas = guardadas.filter((s) => s.id !== id);
+      return { ok: true, datos: null };
+    },
+    vaciar: () => {
+      guardadas = [];
+    },
+  };
+}

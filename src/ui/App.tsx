@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ServicioCuenta, Usuario } from '../adapters/auth/ServicioCuenta';
 import { Enlace, navegar, useRuta } from './navegacion';
+import { OfertaGuardar } from './OfertaGuardar';
+import { vaciarSesionInvitado } from './sesionInvitado';
 import { PaginaAnualidades } from './paginas/Anualidades';
 import { PaginaCompuesto } from './paginas/Compuesto';
 import { PaginaIniciarSesion } from './paginas/IniciarSesion';
 import { PaginaInicio } from './paginas/Inicio';
+import { PaginaMisSimulaciones } from './paginas/MisSimulaciones';
 import { PaginaPerfil } from './paginas/Perfil';
 import { PaginaPolitica } from './paginas/PoliticaDatos';
 import { PaginaRecuperar } from './paginas/RecuperarContrasena';
@@ -38,6 +41,8 @@ function Pagina({ ruta, servicioCuenta, usuario, alCambiarSesion }: PropsPagina)
       return <PaginaRecuperar servicio={servicioCuenta} />;
     case '/simulador':
       return <PaginaSimulador servicio={servicioCuenta} usuario={usuario} />;
+    case '/simulaciones':
+      return <PaginaMisSimulaciones servicio={servicioCuenta} usuario={usuario} />;
     case '/interes-compuesto':
       return <PaginaCompuesto />;
     case '/anualidades':
@@ -87,6 +92,8 @@ export function App({ servicioCuenta = null }: Props) {
   const cerrarSesion = async () => {
     await servicioCuenta?.cerrarSesion();
     setUsuario(null);
+    // Nada de la sesión anterior debe quedar en memoria: ni la lista del invitado ni la simulación pendiente.
+    vaciarSesionInvitado();
     navegar('/');
   };
 
@@ -104,6 +111,9 @@ export function App({ servicioCuenta = null }: Props) {
           {usuario ? (
             <>
               <span className="etiqueta-modo">Hola, {usuario.nombre}</span>
+              <Enlace className="boton boton--pequeno boton--secundario" href="/simulaciones">
+                Mis simulaciones
+              </Enlace>
               <Enlace className="boton boton--pequeno boton--secundario" href="/perfil">
                 Mi perfil
               </Enlace>
@@ -116,6 +126,9 @@ export function App({ servicioCuenta = null }: Props) {
               <span className="etiqueta-modo" role="status">
                 Invitado: no se guarda nada
               </span>
+              <Enlace className="boton boton--pequeno boton--secundario" href="/simulaciones">
+                Mis simulaciones
+              </Enlace>
               {ruta !== '/iniciar-sesion' && (
                 <Enlace className="boton boton--pequeno boton--secundario" href="/iniciar-sesion">
                   Iniciar sesión
@@ -132,6 +145,7 @@ export function App({ servicioCuenta = null }: Props) {
       </header>
 
       <main id="contenido" className="contenido" tabIndex={-1}>
+        <OfertaGuardar key={usuario?.correo ?? 'invitado'} servicio={servicioCuenta} usuario={usuario} />
         <Pagina ruta={ruta} servicioCuenta={servicioCuenta} usuario={usuario} alCambiarSesion={actualizarSesion} />
       </main>
 

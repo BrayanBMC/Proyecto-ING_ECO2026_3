@@ -518,3 +518,63 @@ Con 10.000.000, 12 cuotas, tasa 1,5 "Efectiva" mensual:
 3. Entrar a "Anualidades". A = 500.000, n = 12, tasa 1 efectiva mensual, con 2 decimales. Resultado esperado: anticipada con S = $ 6.404.664,02 y P = $ 5.683.814,12; vencida con S = $ 6.341.251,51. Con tasa 0, S y P valen $ 6.000.000 en ambas.
 4. Entrar a "Reparto proporcional". Monto 1.000.000 e índice 1 en las tres partes. Resultado esperado: $ 333.334, $ 333.333 y $ 333.333, con la suma exacta de $ 1.000.000.
 5. En el mismo reparto elegir "Inverso" y poner el índice 0 en la parte 1. Resultado esperado: el error aparece bajo ese índice y no se calcula nada.
+
+## [HU-21 a HU-24] - Simulaciones guardadas, comparador y enlaces para compartir
+
+**Fecha:** 1 de noviembre de 2026
+
+**Estado:** Completado. Pruebas en verde en GitHub Actions (ver el resultado del último push a `develop`). **Requiere correr la migración `003`** (ver "Cómo probar").
+
+**Historias:**
+
+- HU-21: como usuario registrado quiero guardar, renombrar, abrir y borrar mis simulaciones para retomarlas desde cualquier equipo.
+- HU-22: como invitado que decide registrarme quiero llevar la simulación abierta a mi cuenta para no repetirla.
+- HU-23: como estudiante quiero comparar hasta 3 simulaciones lado a lado para elegir la más conveniente.
+- HU-24: como estudiante quiero compartir una simulación por enlace para que el docente vea el mismo resultado sin crear cuenta.
+
+### ¿Qué se hizo?
+
+- `db/migrations/003_simulaciones.sql`: tabla `simulacion` (id, usuario, nombre de 1 a 60 caracteres, `parametros` JSONB de hasta 2.000 caracteres, fechas) con RLS que solo deja ver y tocar las filas propias. Un trigger limita a 50 simulaciones por usuario y el error se traduce a un mensaje en español.
+- `src/core/guardado.ts`: `leerParametros` (comprueba la forma de lo que llega de la base de datos o de un enlace), `calcularCredito` (valida con las mismas reglas del simulador y recalcula todo), `resumirCredito`, `indiceMenorCosto`, `validarNombreSimulacion` y `nombreAutomatico`.
+- `src/adapters/repo/RepoSimulaciones.ts`: el puerto de simulaciones con dos implementaciones, la de la cuenta (Neon) y la del invitado (memoria de la pestaña).
+- `src/adapters/auth/*`: `ServicioCuenta` gana `listarSimulaciones`, `guardarSimulacion`, `renombrarSimulacion` y `borrarSimulacion`, implementadas en `neonCuenta.ts`.
+- `src/adapters/share/url.ts`: `codificarEnlace`, `decodificarEnlace` y `crearEnlace` (base64url del JSON en el hash).
+- `src/ui/paginas/MisSimulaciones.tsx` (`/simulaciones`): lista, abrir, renombrar, borrar con confirmación y comparador.
+- `src/ui/paginas/GuardarCompartir.tsx`: bajo la tabla del simulador, "Guardar simulación" y "Copiar enlace".
+- `src/ui/OfertaGuardar.tsx` y `src/ui/sesionInvitado.ts`: la oferta del invitado (HU-22) y la memoria de la sesión.
+- `src/ui/paginas/Simulador.tsx`: si la dirección trae `#c=…`, carga la simulación y la calcula al abrir.
+- `src/ui/App.tsx`: la ruta `/simulaciones`, el enlace "Mis simulaciones" en la cabecera y la oferta de HU-22.
+
+### ¿Cómo se hizo? (Explicación técnica)
+
+- **Solo se guardan los parámetros (criterio HU-21):** la simulación se guarda como los textos del formulario (monto, plazo, tasa, gracia, abono…). La tabla de cuotas no se guarda: al abrir se recalcula con el mismo motor, así que es siempre la misma que se vería al simular de nuevo. Es lo que ya decía la propuesta.
+- **Una sola puerta de validación (criterio HU-24):** abrir un enlace, abrir una simulación guardada y mostrar la lista pasan por `calcularCredito`, que usa `validarSimulacion`, `validarGracia` y `validarAbono`. Un enlace alterado con el plazo 400 o una tasa de 101 % muestra el mensaje del campo y no calcula nada. Antes, `leerParametros` descarta lo que no tiene la forma correcta (tipos o valores permitidos).
+- **El hash no viaja al servidor (criterio HU-24):** el navegador no envía lo que va después de `#`, así que los parámetros no quedan en ningún registro del servidor. Cloudflare solo sirve el `index.html`.
+- **Invitado sin rastro (HU-22 y HU-23):** la lista del invitado y la simulación pendiente viven en variables del módulo. No se usa `localStorage` ni `sessionStorage`. Al cerrar o recargar la pestaña, y al cerrar sesión, no queda nada.
+- **Oferta de HU-22:** mientras el invitado tiene resultados en pantalla, sus parámetros quedan como "pendiente". Si inicia sesión o se registra, la app muestra "Guardar esta simulación en mi cuenta". Si pulsa "No guardar", se descarta y no se guarda nada. Si edita un dato antes, ya no hay simulación pendiente.
+- **Comparador (criterio HU-23):** muestra, por cada simulación elegida, la primera cuota, la EA, el total de intereses, el total pagado y ρ = intereses / capital. Resalta como "Menor costo" la de menos intereses totales (con empate gana la primera). Los valores se recalculan al comparar; no se leen de la base de datos.
+- **Cambios frente a la propuesta:** (1) no hay tablas `escenario` ni `escenario_simulacion`: "Mis simulaciones" es la lista y el comparador toma las elegidas ahí, sin guardar escenarios aparte. (2) No se guardan las columnas `cuota`, `total_intereses`, `tasa_ea`… de la tabla: se calculan al mostrar, lo que evita datos que queden desactualizados y problemas de precisión con `NUMERIC`. (3) Solo se guardan simulaciones de crédito (`modulo = 'credito'`); las calculadoras de las HU-18 a HU-20 no se guardan.
+- **Seguridad:** la política RLS exige `usuario_id::text = auth.user_id()` en lectura, inserción, edición y borrado. El `usuario_id` lo pone la base de datos. Los parámetros se validan de nuevo al leerlos, porque podrían haberse alterado.
+
+### Pruebas unitarias implementadas
+
+- `tests/unit/guardado.test.ts`: `leerParametros` (válidos, sin abono, campos extra, no objetos, tipos y valores inválidos, abono mal formado), `calcularCredito` (T3, T6, Alemán, abono, y los mensajes de plazo, monto, tasa, gracia y abono fuera de rango), `indiceMenorCosto` y los nombres.
+- `tests/unit/repoYEnlace.test.ts`: el enlace (ida y vuelta, tildes, sin caracteres problemáticos, enlaces dañados o demasiado largos, forma equivocada, UTF-8 inválido y fuera de rango), el repositorio del invitado (orden, renombrar, borrar, tope de 50, vaciar) y el de la cuenta.
+- `tests/unit/Simulaciones.test.tsx`: los criterios de las cuatro HU en pantalla: lista ordenada por fecha, abrir, renombrar, borrar con confirmación, comparador con menor costo resaltado y límite de 3, invitado, guardar y copiar enlace, abrir enlaces válidos y alterados, y la oferta de HU-22 (aceptar, rechazar, error, cerrar sesión).
+
+### ¿Cómo probar esta funcionalidad manualmente?
+
+Una sola vez, después de fusionar el PR en `main`:
+
+1. GitHub → Actions → "Migraciones de base de datos" → Run workflow (rama `main`). Debe terminar en verde.
+2. En la consola de Neon → Data API → pulsar "Refresh schema cache" para que la Data API vea la tabla `simulacion`.
+
+Pruebas:
+
+1. Con sesión, simular 10.000.000 a 12 cuotas, tasa 1,5 efectiva mensual. Bajo la tabla, escribir "Casa" y pulsar "Guardar simulación". Resultado esperado: "Guardada como «Casa»". Repetir con tasa 2 ("Moto") y tasa 1 ("Estudio").
+2. Abrir "Mis simulaciones". Resultado esperado: las 3 aparecen, la más reciente primero, con cuota, EA e intereses.
+3. Iniciar sesión en otro navegador. Resultado esperado: aparecen las mismas 3. Pulsar "Abrir" en una: se ve la misma tabla.
+4. Renombrar una y borrar otra (con la confirmación). Recargar. Resultado esperado: el cambio se conserva y la borrada no está.
+5. Marcar las 3 y pulsar "Comparar seleccionadas". Resultado esperado: columnas con cuota, EA, intereses, total pagado y ρ; "Estudio" (1 %) con "✓ Menor costo".
+6. Sin sesión (ventana privada), simular y pulsar "Copiar enlace". Pegar el enlace en otra pestaña. Resultado esperado: la misma tabla. Cambiar a mano el plazo del formulario no afecta al enlace; alterar el texto del hash muestra "El enlace no es válido".
+7. Sin sesión, simular, luego iniciar sesión. Resultado esperado: aparece "Guardar esta simulación en mi cuenta". Probar "No guardar" en una ocasión y comprobar que "Mis simulaciones" no tiene nada nuevo.
