@@ -386,7 +386,7 @@ describe('HU-17: exportar a PDF y Excel', () => {
   it('el invitado también puede exportar (HU-06)', () => {
     creditoBase();
     simular();
-    expect(screen.getByRole('button', { name: 'Exportar a PDF' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Exportar a Excel' })).toBeEnabled();
+    expect((screen.getByRole('button', { name: 'Exportar a PDF' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole('button', { name: 'Exportar a Excel' }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
