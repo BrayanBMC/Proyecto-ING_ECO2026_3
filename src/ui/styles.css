@@ -571,6 +571,7 @@ summary {
   border-radius: var(--radio);
   padding: 1.25rem;
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 0.5rem;
   align-content: start;
   min-height: 44px;
@@ -610,8 +611,7 @@ summary {
   }
 
   .bento__celda--grande {
-    grid-column: span 2;
-    grid-row: span 2;
+    grid-column: 1 / -1;
   }
 }
 
