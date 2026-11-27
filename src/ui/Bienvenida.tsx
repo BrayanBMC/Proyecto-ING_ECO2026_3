@@ -3,7 +3,7 @@ import { Enlace } from './navegacion';
 
 /** Datos de la ficha del proyecto. */
 export const FICHA_PROYECTO = {
-  autor: 'Brayan Acosta Parrado',
+  autor: 'Brayan Acosta Parrado, Joel Stiven Sanabria Castro, Santiago Alfonso Prieto',
   universidad: 'Universidad Distrital Francisco José de Caldas',
   carrera: 'Ingeniería en Telemática',
   semestre: '2026-3',
@@ -57,7 +57,7 @@ export function Bienvenida({ alCerrar }: { alCerrar: () => void }) {
           Simulador de créditos e ingeniería económica
         </h2>
         <dl className="ficha">
-          <dt>Autor</dt>
+          <dt>Autores</dt>
           <dd>{FICHA_PROYECTO.autor}</dd>
           <dt>Universidad</dt>
           <dd>{FICHA_PROYECTO.universidad}</dd>

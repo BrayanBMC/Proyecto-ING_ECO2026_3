@@ -20,7 +20,7 @@ describe('Ventana de bienvenida', () => {
     const texto = cuadro().textContent ?? '';
     expect(texto).toContain('Simulador de créditos e ingeniería económica');
     expect(FICHA_PROYECTO).toEqual({
-      autor: 'Brayan Acosta Parrado',
+      autor: 'Brayan Acosta Parrado, Joel Stiven Sanabria Castro, Santiago Alfonso Prieto',
       universidad: 'Universidad Distrital Francisco José de Caldas',
       carrera: 'Ingeniería en Telemática',
       semestre: '2026-3',

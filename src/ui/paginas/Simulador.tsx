@@ -139,12 +139,14 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
         <>
         <div className="tabla-contenedor">
           <table className="tabla">
-            <caption className="sr-solo">Francés frente a Alemán</caption>
+            <caption className="sr-solo">
+              Cuota Fija (Sistema Francés) frente a Amortización Constante (Sistema Alemán)
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Concepto</th>
-                <th scope="col">Francés</th>
-                <th scope="col">Alemán</th>
+                <th scope="col">Cuota Fija (Sistema Francés)</th>
+                <th scope="col">Amortización Constante (Sistema Alemán)</th>
               </tr>
             </thead>
             <tbody>
@@ -160,18 +162,18 @@ function ComparacionSistemas({ comparacion, escala }: { comparacion: Comparacion
         </div>
         <div className="titulo-ayuda">
           <p className="comparar-delta">
-            Sobrecosto del Francés (Δ):{' '}
+            Sobrecosto de Cuota Fija (Sistema Francés) (Δ):{' '}
             <strong>
               {sobrecosto
-                ? `${porcentaje(sobrecosto, 2)} más de intereses que el Alemán`
+                ? `${porcentaje(sobrecosto, 2)} más de intereses que Amortización Constante (Sistema Alemán)`
                 : 'no aplica (sin intereses)'}
             </strong>
           </p>
           <Ayuda id="delta" />
         </div>
         <p className="tarjeta__texto">
-          El Alemán abona más capital al comienzo, así que el saldo baja más rápido y se pagan menos intereses. El
-          Francés tiene una cuota fija y más baja al inicio.
+          Amortización Constante (Sistema Alemán) abona más capital al comienzo, así que el saldo baja más rápido y se
+          pagan menos intereses. Cuota Fija (Sistema Francés) tiene una cuota fija y más baja al inicio.
         </p>
         </>
       )}
@@ -548,7 +550,7 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
                 checked={f.sistema === 'frances'}
                 onChange={() => cambiar('sistema', 'frances')}
               />{' '}
-              Francés (cuota fija)
+              Cuota Fija (Sistema Francés)
             </label>
             <label>
               <input
@@ -557,7 +559,7 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
                 checked={f.sistema === 'aleman'}
                 onChange={() => cambiar('sistema', 'aleman')}
               />{' '}
-              Alemán (abono fijo)
+              Amortización Constante (Sistema Alemán)
             </label>
           </fieldset>
           <fieldset className="opciones">
@@ -634,7 +636,10 @@ export function PaginaSimulador({ servicio = null, usuario = null, hoy }: Props)
           <section className="tarjeta tarjeta--ancha" aria-labelledby="titulo-tabla">
             <div className="titulo-ayuda">
               <h2 id="titulo-tabla">
-                Tabla de amortización · {resultado.simulacion.sistema === 'frances' ? 'Francés' : 'Alemán'}
+                Tabla de amortización ·{' '}
+                {resultado.simulacion.sistema === 'frances'
+                  ? 'Cuota Fija (Sistema Francés)'
+                  : 'Amortización Constante (Sistema Alemán)'}
               </h2>
               <Ayuda id="tablaAmortizacion" />
             </div>

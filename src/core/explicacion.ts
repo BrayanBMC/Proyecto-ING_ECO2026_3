@@ -53,7 +53,7 @@ export function explicarAmortizacion(
       i.isZero()
         ? { titulo: 'Cuota fija (tasa 0)', formula: `R = ${P} / n`, sustitucion: `${pesos(s0)} / ${n}`, resultado: pesos(primera.cuota) }
         : {
-            titulo: 'Cuota fija (sistema Francés)',
+            titulo: 'Cuota Fija (Sistema Francés)',
             formula: `R = ${P} · i / (1 − (1 + i)^−n)`,
             sustitucion: `${pesos(s0)} · ${iTxt} / (1 − (1 + ${iTxt})^−${n})`,
             resultado: pesos(primera.cuota),
@@ -61,7 +61,7 @@ export function explicarAmortizacion(
     );
   } else {
     pasos.push({
-      titulo: 'Abono fijo a capital (sistema Alemán)',
+      titulo: 'Amortización Constante (Sistema Alemán)',
       formula: `A = ${P} / n`,
       sustitucion: `${pesos(s0)} / ${n}`,
       resultado: pesos(primera.abono),

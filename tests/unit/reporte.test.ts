@@ -48,7 +48,7 @@ describe('core/reporte (HU-17)', () => {
     const mapa = Object.fromEntries(r.parametros.map((p) => [p.etiqueta, p.valor]));
     expect(mapa['Monto del crédito']).toBe('$ 10000000');
     expect(mapa['Número de cuotas']).toBe('12');
-    expect(mapa['Sistema de amortización']).toBe('Francés (cuota fija)');
+    expect(mapa['Sistema de amortización']).toBe('Cuota Fija (Sistema Francés)');
     // La EA es la real de la simulación: (1,015)^12 − 1 = 19,5618171968 %.
     expect(mapa['Tasa efectiva anual (EA)']).toBe(`${d.tasa.ea.times(100).toDecimalPlaces(10).toString().replace('.', ',')} %`);
     expect(mapa['Tasa efectiva anual (EA)']).toContain('19,5618');

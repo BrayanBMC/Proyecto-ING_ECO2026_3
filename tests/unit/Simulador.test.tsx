@@ -29,7 +29,11 @@ const celda = (fila: number, columna: number) =>
 
 /** Celda de la tabla "Comparar sistemas": fila por concepto, columna 1 = Francés, 2 = Alemán. */
 const comparada = (concepto: string, columna: 1 | 2) =>
-  within(screen.getByRole('table', { name: 'Francés frente a Alemán' }))
+  within(
+    screen.getByRole('table', {
+      name: 'Cuota Fija (Sistema Francés) frente a Amortización Constante (Sistema Alemán)',
+    }),
+  )
     .getByRole('rowheader', { name: concepto })
     .parentElement!.querySelectorAll('th, td')[columna] ?? null;
 
@@ -128,7 +132,7 @@ describe('HU-10: tabla de amortización', () => {
     llenar({ monto: '12.000.000', tasa: '1' });
     elegir('Tipo de tasa', 'efectiva');
     elegir('Periodo de la tasa', '12');
-    fireEvent.click(screen.getByLabelText('Alemán (abono fijo)'));
+    fireEvent.click(screen.getByLabelText('Amortización Constante (Sistema Alemán)'));
     simular();
 
     for (let k = 1; k <= 12; k++) {
@@ -175,7 +179,11 @@ describe('HU-11: comparar sistemas', () => {
     elegir('Periodo de la tasa', '12');
     simular();
 
-    expect(screen.queryByRole('table', { name: 'Francés frente a Alemán' })).toBeNull();
+    expect(
+      screen.queryByRole('table', {
+        name: 'Cuota Fija (Sistema Francés) frente a Amortización Constante (Sistema Alemán)',
+      }),
+    ).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Comparar sistemas' }));
 
     // Alemán (T4): cuota inicial 1.120.000, intereses 780.000, total 12.780.000.
@@ -184,8 +192,8 @@ describe('HU-11: comparar sistemas', () => {
     expect(texto(comparada('Total pagado', 2))).toBe('$ 12.780.000');
     // Francés: cuota fija 1.066.185 (PAGO(1%;12;-12000000) = 1.066.185,44).
     expect(texto(comparada('Cuota inicial', 1))).toBe('$ 1.066.185');
-    expect(texto(screen.getByText(/Sobrecosto del Francés/).closest('p'))).toMatch(
-      /Sobrecosto del Francés \(Δ\): \d+,\d{2} % más de intereses que el Alemán/,
+    expect(texto(screen.getByText(/Sobrecosto de Cuota Fija \(Sistema Francés\)/).closest('p'))).toMatch(
+      /Sobrecosto de Cuota Fija \(Sistema Francés\) \(Δ\): \d+,\d{2} % más de intereses que Amortización Constante \(Sistema Alemán\)/,
     );
   });
 });
