@@ -22,7 +22,7 @@ describe('core/explicacion (HU-16)', () => {
   it('criterio HU-16: Francés T3b muestra fórmula, valores sustituidos y resultado de cada paso', () => {
     expect(explicar('frances')).toEqual([
       {
-        titulo: 'Cuota fija (sistema Francés)',
+        titulo: 'Cuota Fija (Sistema Francés)',
         formula: 'R = P · i / (1 − (1 + i)^−n)',
         sustitucion: '$10000000 · 0,015 / (1 − (1 + 0,015)^−12)',
         resultado: '$916800',

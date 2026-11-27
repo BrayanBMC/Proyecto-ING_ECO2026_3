@@ -100,11 +100,11 @@ export const GLOSARIO = {
   },
   sistema: {
     nombre: 'Sistema de amortización',
-    corta: 'La forma de repartir los pagos. Francés: la cuota es siempre igual. Alemán: pagas siempre la misma parte de la deuda, así que la cuota empieza más alta y va bajando.',
+    corta: 'La forma de repartir los pagos. Cuota Fija (Sistema Francés): la cuota es siempre igual. Amortización Constante (Sistema Alemán): pagas siempre la misma parte de la deuda, así que la cuota empieza más alta y va bajando.',
     larga:
-      'En el Francés al principio pagas más intereses y menos deuda; la cuota no cambia.\n\nEn el Alemán abonas lo mismo a la deuda en cada cuota; como la deuda baja más rápido, los intereses también bajan y en total pagas menos.',
-    ejemplo: 'Para $ 12.000.000 a 12 cuotas con 1 % mensual: el Francés cobra unos $ 1.066.185 en cada cuota; el Alemán empieza en $ 1.120.000 y va bajando.',
-    errorComun: 'Pensar que la cuota más baja es siempre la más barata: el Francés paga más intereses en total.',
+      'En Cuota Fija (Sistema Francés) al principio pagas más intereses y menos deuda; la cuota no cambia.\n\nEn Amortización Constante (Sistema Alemán) abonas lo mismo a la deuda en cada cuota; como la deuda baja más rápido, los intereses también bajan y en total pagas menos.',
+    ejemplo: 'Para $ 12.000.000 a 12 cuotas con 1 % mensual: Cuota Fija (Sistema Francés) cobra unos $ 1.066.185 en cada cuota; Amortización Constante (Sistema Alemán) empieza en $ 1.120.000 y va bajando.',
+    errorComun: 'Pensar que la cuota más baja es siempre la más barata: Cuota Fija (Sistema Francés) paga más intereses en total.',
   },
   graciaPeriodos: {
     nombre: 'Periodos de gracia',
@@ -196,7 +196,7 @@ export const GLOSARIO = {
   },
   cuota: {
     nombre: 'Cuota',
-    corta: 'Lo que pagas en cada periodo para ir cubriendo la deuda y sus intereses. Con el sistema Francés es siempre igual; con el Alemán va bajando.',
+    corta: 'Lo que pagas en cada periodo para ir cubriendo la deuda y sus intereses. Con Cuota Fija (Sistema Francés) es siempre igual; con Amortización Constante (Sistema Alemán) va bajando.',
     ejemplo: '$ 10.000.000 a 12 cuotas con 1,5 % mensual: cuota de $ 916.800.',
     verPasos: true,
   },
@@ -225,8 +225,8 @@ export const GLOSARIO = {
   },
   delta: {
     nombre: 'Sobrecosto Δ (delta)',
-    corta: 'Cuánto más pagas de intereses con el sistema Francés que con el Alemán, expresado en porcentaje.',
-    ejemplo: 'Para $ 12.000.000 a 12 cuotas con 1 % mensual, el Alemán paga $ 780.000 de intereses y el Francés cerca de $ 794.225: Δ ≈ 1,82 %.',
+    corta: 'Cuánto más pagas de intereses con Cuota Fija (Sistema Francés) que con Amortización Constante (Sistema Alemán), expresado en porcentaje.',
+    ejemplo: 'Para $ 12.000.000 a 12 cuotas con 1 % mensual, Amortización Constante (Sistema Alemán) paga $ 780.000 de intereses y Cuota Fija (Sistema Francés) cerca de $ 794.225: Δ ≈ 1,82 %.',
   },
   rho: {
     nombre: 'ρ (ro)',

@@ -4,7 +4,7 @@ const MODULOS = [
   {
     id: 'simulador',
     titulo: 'Simulador de créditos',
-    detalle: 'Francés y Alemán, gracia, abonos extra y alerta de usura.',
+    detalle: 'Cuota Fija (Sistema Francés) y Amortización Constante (Sistema Alemán), gracia, abonos extra y alerta de usura.',
     destacado: true,
     ruta: '/simulador',
     accion: 'Abrir simulador',

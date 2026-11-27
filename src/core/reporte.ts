@@ -39,7 +39,10 @@ export interface ReporteArmado {
   nombreArchivo: string;
 }
 
-const SISTEMAS: Record<Sistema, string> = { frances: 'Francés (cuota fija)', aleman: 'Alemán (abono fijo)' };
+const SISTEMAS: Record<Sistema, string> = {
+  frances: 'Cuota Fija (Sistema Francés)',
+  aleman: 'Amortización Constante (Sistema Alemán)',
+};
 
 function pct(x: Dec): string {
   return `${numero(x.times(100))} %`;
